@@ -3,6 +3,7 @@
 
 import pythreejs as p3
 from matplotlib import ticker
+import numpy as np
 from typing import List, Tuple
 
 # N = 1000
@@ -57,12 +58,12 @@ def _get_offsets(limits: Tuple[float], axis: int, ind: int) -> np.ndarray:
     return offsets
 
 
-def _make_ticks(self, limits, tick_size: float, ndim=2) -> p3.Group:
+def _make_ticks(limits, tick_size: float, ndim=2) -> p3.Group:
     """
     Create tick labels on outline edges
     """
     ticks_group = p3.Group()
-    iden = np.identity(ndim, dtype=np.float32)
+    iden = np.identity(3, dtype=np.float32)
     ticker_ = ticker.MaxNLocator(5)
     for axis in range(ndim):
         ticks = ticker_.tick_values(limits[axis][0], limits[axis][1])
@@ -70,7 +71,7 @@ def _make_ticks(self, limits, tick_size: float, ndim=2) -> p3.Group:
             if limits[axis][0] <= tick <= limits[axis][1]:
                 tick_pos = iden[axis] * tick + _get_offsets(limits, axis, 0)
                 ticks_group.add(
-                    _make_sprite(string=value_to_string(tick, precision=1),
+                    _make_sprite(string=str(round(tick, 1)),
                                  position=tick_pos.tolist(),
                                  size=tick_size))
     return ticks_group
@@ -134,10 +135,10 @@ class Axes(p3.Group):
         self._geometry = p3.BufferGeometry(
             attributes={
                 'position':
-                np.array([[
+                p3.BufferAttribute(array=np.array([[
                     self.xmin, self.xmin, self.xmax, self.xmax, self.xmin
                 ], [self.ymin, self.ymax, self.ymax, self.ymin, self.ymin],
-                          [0, 0, 0, 0, 0]]),
+                                                   [0, 0, 0, 0, 0]]).T),
             })
         self._material = p3.LineBasicMaterial(color='black', linewidth=1)
         self._outline = p3.Line(geometry=self._geometry,

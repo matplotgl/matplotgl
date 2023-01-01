@@ -34,10 +34,11 @@ class Figure:
 
         self.width = 800
         self.height = 500
-        # camera = p3.PerspectiveCamera(position=[40.0, 0, 0], aspect=width / height)
-        self.camera = p3.OrthographicCamera(-20, 20, -20, 20)
+        self.camera = p3.PerspectiveCamera(position=[0.0, 0, 2],
+                                           aspect=self.width / self.height)
+        # self.camera = p3.OrthographicCamera(-2, 2, -2, 2)
         self.scene = p3.Scene(children=[self.camera], background="#f0f0f0")
-        # self.controls = p3.OrbitControls(controlling=self.camera)
+        self.controls = p3.OrbitControls(controlling=self.camera)
         self.renderer = p3.Renderer(camera=self.camera,
                                     scene=self.scene,
                                     controls=[self.controls],

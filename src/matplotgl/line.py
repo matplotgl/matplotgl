@@ -9,27 +9,16 @@ from typing import List, Tuple
 
 class Line:
 
-    def __init__(self, x, y, color=) -> None:
+    def __init__(self, x, y, color='blue') -> None:
 
         self._geometry = p3.BufferGeometry(
             attributes={
-                'position': np.array([x, y, np.zeros_like(x)]),
+                'position':
+                p3.BufferAttribute(
+                    array=np.array([x, y, np.zeros_like(x)])),
             })
-        self._material = p3.LineBasicMaterial(color='black', linewidth=1)
-        self._outline = p3.Line(geometry=self._geometry,
-                                material=self._material)
-
-        limits = [[self.xmin, self.xmax], [self.ymin, self.ymax], [0, 0]]
-        tick_size = 0.05
-
-        self.ticks = _make_ticks(limits=limits, tick_size=tick_size)
-        # self.ticklabels = _make_labels(limits=limits,
-        #                                center=center,
-        #                                tick_size=tick_size)
-
-        super().__init__()
-        for obj in (self._outline, self.ticks):  # , self.ticklabels):
-            self.add(obj)
+        self._material = p3.LineBasicMaterial(color=color, linewidth=1)
+        self._line = p3.Line(geometry=self._geometry, material=self._material)
 
 
 # class Outline(p3.Group):
