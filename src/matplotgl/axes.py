@@ -156,6 +156,10 @@ class Axes(p3.Group):
         for obj in (self._outline, self.ticks):  # , self.ticklabels):
             self.add(obj)
 
+    def plot(self, *args, **kwargs):
+        from .plot import plot as p
+        return p(self, *args, **kwargs)
+
 
 # class Outline(p3.Group):
 #     """
