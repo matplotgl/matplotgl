@@ -44,7 +44,7 @@ def _make_sprite(string: str,
     sm = p3.SpriteMaterial(map=p3.TextTexture(string=string,
                                               color=color,
                                               size=300,
-                                              squareTexture=True),
+                                              squareTexture=False),
                            transparent=True)
     return p3.Sprite(material=sm, position=position, scale=[size, size, size])
 
@@ -54,7 +54,8 @@ def _get_offsets(limits: Tuple[float], axis: int, ind: int) -> np.ndarray:
     Compute offsets for n dimensions, along the edges of the box.
     """
     offsets = np.array([limits[i][ind] for i in range(3)])
-    offsets[axis] = 0
+    print(offsets, axis)
+    offsets[axis] = -0.05
     return offsets
 
 
@@ -131,6 +132,7 @@ class Axes(p3.Group):
         self.xmax = 1.0
         self.ymin = 0.0
         self.ymax = 1.0
+        self._fig = None
 
         self._geometry = p3.BufferGeometry(
             attributes={
@@ -159,6 +161,9 @@ class Axes(p3.Group):
     def plot(self, *args, **kwargs):
         from .plot import plot as p
         return p(self, *args, **kwargs)
+
+    def get_figure(self):
+        return self._fig
 
 
 # class Outline(p3.Group):

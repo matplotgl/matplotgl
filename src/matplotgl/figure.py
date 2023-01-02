@@ -70,7 +70,7 @@ class Figure(ipw.HBox):
         self.height = 500
         # self.camera = p3.PerspectiveCamera(position=[0.0, 0, 2],
         #                                    aspect=self.width / self.height)
-        self.camera = p3.OrthographicCamera(-0.1, 1.1, -0.1, 1.1, -1, 100)
+        self.camera = p3.OrthographicCamera(-0.1, 1.1, 1.1, -0.1, -1, 100)
         self.scene = p3.Scene(children=[
             self.camera, self._background_mesh, self._zoom_rect_line
         ],
@@ -82,10 +82,17 @@ class Figure(ipw.HBox):
                                     width=self.width,
                                     height=self.height)
         self.toolbar = Toolbar()
+        self.toolbar._home.on_click(self.home)
         self.toolbar._zoom.observe(self.toggle_pickers, names='value')
         self._zoom_mouse_down = False
 
         super().__init__([self.toolbar, self.renderer])
+
+    def home(self, *args):
+        self.camera.left = -0.1
+        self.camera.right = 1.1
+        self.camera.bottom = -0.1
+        self.camera.top = 1.1
 
     def toggle_pickers(self, change):
         if change['new']:
@@ -104,19 +111,25 @@ class Figure(ipw.HBox):
 
     def on_mouse_down(self, change):
         self._zoom_mouse_down = True
-        x, y, z = self._zoom_down_picker.point
+        x, y, z = change['new']
         self._zoom_rect_line.geometry.attributes['position'].array = np.array(
             [[x, x, x, x, x], [y, y, y, y, y], [0, 0, 0, 0, 0]]).T
         self._zoom_rect_line.visible = True
+        print(x, y, z, self._zoom_rect_line.visible)
 
-    def on_mouse_up(self, change):
+    def on_mouse_up(self, *ignored):
         if self._zoom_mouse_down:
             self._zoom_mouse_down = False
             self._zoom_rect_line.visible = False
+            array = self._zoom_rect_line.geometry.attributes['position'].array
+            self.camera.left = array[:, 0].min()
+            self.camera.right = array[:, 0].max()
+            self.camera.bottom = array[:, 1].min()
+            self.camera.top = array[:, 1].max()
 
     def on_mouse_move(self, change):
         if self._zoom_mouse_down:
-            x, y, z = self._zoom_move_picker.point
+            x, y, z = change['new']
             new_pos = self._zoom_rect_line.geometry.attributes[
                 'position'].array.copy()
             new_pos[2:4, 0] = x
@@ -125,7 +138,8 @@ class Figure(ipw.HBox):
                 'position'].array = new_pos
 
     def add_axes(self, axes):
-        self.scene.add(axes)
+        axes._fig = self
+        self.camera.add(axes)
 
 
 # # Picker object
