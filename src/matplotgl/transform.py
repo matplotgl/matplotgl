@@ -8,7 +8,7 @@ class Transform:
         self.zoomed_scale = None
 
     def __call__(self, x):
-        if None not in (self.zoomed_origin, self.zoomed_scale):
+        if self._zoomed():
             return (x - self.zoomed_origin) * self.zoomed_scale
         else:
             return (x - self.origin) * self.scale
@@ -16,8 +16,14 @@ class Transform:
     def __repr__(self):
         return f'Transform(origin={self.origin}, scale={self.scale})'
 
+    def _zoomed(self):
+        return None not in (self.zoomed_origin, self.zoomed_scale)
+
     def inverse(self, x):
-        return
+        if self._zoomed():
+            return x / self.zoomed_scale + self.zoomed_origin
+        else:
+            return x / self.scale + self.origin
 
     def update(self, low, high):
         self.origin = low
@@ -30,3 +36,17 @@ class Transform:
     def reset(self):
         self.zoomed_origin = None
         self.zoomed_scale = None
+
+    @property
+    def low(self):
+        if self._zoomed():
+            return self.zoomed_origin
+        else:
+            return self.origin
+
+    @property
+    def high(self):
+        if self._zoomed():
+            return (1.0 / self.zoomed_scale) + self.zoomed_origin
+        else:
+            return (1.0 / self.scale) + self.origin

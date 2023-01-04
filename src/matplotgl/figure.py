@@ -156,9 +156,10 @@ class Figure(ipw.HBox):
             self._zoom_rect_line.geometry.attributes[
                 'position'].array = new_pos
 
-    def add_axes(self, axes):
-        axes._fig = self
-        self.camera.add(axes)
+    def add_axes(self, ax):
+        self._axes.append(ax)
+        ax._fig = self
+        self.camera.add(ax)
 
 
 # # Picker object

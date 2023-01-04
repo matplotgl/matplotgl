@@ -2,6 +2,7 @@
 # Copyright (c) 2023 Matplotgl contributors (https://github.com/matplotgl)
 
 from .transform import Transform
+from .utils import value_to_string
 
 import pythreejs as p3
 from matplotlib import ticker
@@ -162,12 +163,13 @@ class Axes(p3.Group):
         #     # if artist is not None:
         self._transformx.update(low=xmin, high=xmax)
         self._transformy.update(low=ymin, high=ymax)
-        self._apply_zoom({
-            'left': xmin,
-            'right': xmax,
-            'bottom': ymin,
-            'top': ymax
-        })
+        self._apply_zoom()
+        # {
+        #     'left': xmin,
+        #     'right': xmax,
+        #     'bottom': ymin,
+        #     'top': ymax
+        # })
 
     # def apply_
     #     for artist in self._artists:
@@ -200,14 +202,16 @@ class Axes(p3.Group):
                     tick_pos = iden[axis] * transforms[axis](
                         tick) - 0.05 * iden[(axis + 1) % 2]
                     ticks_group.add(
-                        _make_sprite(string=str(round(tick, 1)),
+                        _make_sprite(string=value_to_string(tick),
                                      position=tick_pos.tolist(),
                                      size=self._tick_size))
         return ticks_group
 
     def zoom(self, box):
-        self._transformx.zoom(low=box['left'], high=box['right'])
-        self._transformy.zoom(low=box['bottom'], high=box['top'])
+        self._transformx.zoom(low=self._transformx.inverse(box['left']),
+                              high=self._transformx.inverse(box['right']))
+        self._transformy.zoom(low=self._transformy.inverse(box['bottom']),
+                              high=self._transformy.inverse(box['top']))
         self._apply_zoom()
 
     def _apply_zoom(self):
@@ -215,13 +219,14 @@ class Axes(p3.Group):
             artist._apply_transform()
         self.remove(self.ticks)
         self.ticks = self._make_ticks(
-            limits=[[box['left'], box['right']], [box['bottom'], box['top']],
-                    [0, 0]])
+            limits=[[self._transformx.low, self._transformx.high],
+                    [self._transformy.low, self._transformy.high], [0, 0]])
         self.add(self.ticks)
 
     def reset(self):
         self._transformx.reset()
         self._transformy.reset()
+        self._apply_zoom()
 
 
 # class Outline(p3.Group):
