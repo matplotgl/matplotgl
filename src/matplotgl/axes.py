@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Matplotgl contributors (https://github.com/matplotgl)
 
+from .transform import Transform
+
 import pythreejs as p3
 from matplotlib import ticker
 import numpy as np
@@ -58,26 +60,6 @@ def _make_sprite(string: str,
 #     offsets[axis] = -0.05
 #     return offsets
 
-
-def _make_ticks(limits, tick_size: float, ndim=2) -> p3.Group:
-    """
-    Create tick labels on outline edges
-    """
-    ticks_group = p3.Group()
-    iden = np.identity(3, dtype=np.float32)
-    ticker_ = ticker.MaxNLocator(5)
-    for axis in range(ndim):
-        ticks = ticker_.tick_values(limits[axis][0], limits[axis][1])
-        for tick in ticks:
-            if limits[axis][0] <= tick <= limits[axis][1]:
-                tick_pos = iden[axis] * tick - 0.05 * iden[(axis + 1) % 2]
-                ticks_group.add(
-                    _make_sprite(string=str(round(tick, 1)),
-                                 position=tick_pos.tolist(),
-                                 size=tick_size))
-    return ticks_group
-
-
 # def _make_ticklabels(self, limits: Tuple[Variable, Variable, Variable],
 #                      center: List[float], tick_size: float) -> p3.Group:
 #     """
@@ -132,7 +114,8 @@ class Axes(p3.Group):
         self.xmax = 1.0
         self.ymin = 0.0
         self.ymax = 1.0
-        self._transformx
+        self._transformx = Transform()
+        self._transformy = Transform()
         self._fig = None
         self._artists = []
 
@@ -148,9 +131,8 @@ class Axes(p3.Group):
                                 material=self._material)
 
         limits = [[self.xmin, self.xmax], [self.ymin, self.ymax], [0, 0]]
-        tick_size = 0.05
-
-        self.ticks = _make_ticks(limits=limits, tick_size=tick_size)
+        self._tick_size = 0.05
+        self.ticks = self._make_ticks(limits=limits)
         # self.ticklabels = _make_labels(limits=limits,
         #                                center=center,
         #                                tick_size=tick_size)
@@ -168,21 +150,78 @@ class Axes(p3.Group):
         xmax = np.NINF
         ymin = np.inf
         ymax = np.NINF
-        for artist in self.artists:
+        for artist in self._artists:
             lims = artist.get_bbox()
             xmin = min(lims['left'], xmin)
-            xmax = min(lims['right'], xmax)
+            xmax = max(lims['right'], xmax)
             ymin = min(lims['bottom'], ymin)
-            ymax = min(lims['top'], ymax)
-        # if artist is not None:
+            ymax = max(lims['top'], ymax)
+
+        # self.zoom({'left': xmin, 'right': xmax, 'bottom': ymin, 'top': ymax})
+
+        #     # if artist is not None:
+        self._transformx.update(low=xmin, high=xmax)
+        self._transformy.update(low=ymin, high=ymax)
+        self._apply_zoom({
+            'left': xmin,
+            'right': xmax,
+            'bottom': ymin,
+            'top': ymax
+        })
+
+    # def apply_
+    #     for artist in self._artists:
+    #         artist._apply_transform()
+    #     self.remove(self.ticks)
+    #     self.ticks = self._make_ticks(
+    #         limits=[[xmin, xmax], [ymin, ymax], [0, 0]])
+    #     self.add(self.ticks)
 
     def add_artist(self, artist):
         # self.autoscale(artist)
-
+        self._artists.append(artist)
         self._fig.scene.add(artist._line)
 
     def get_figure(self):
         return self._fig
+
+    def _make_ticks(self, limits, ndim=2) -> p3.Group:
+        """
+        Create tick labels on outline edges
+        """
+        ticks_group = p3.Group()
+        iden = np.identity(3, dtype=np.float32)
+        ticker_ = ticker.MaxNLocator(5)
+        transforms = [self._transformx, self._transformy]
+        for axis in range(ndim):
+            ticks = ticker_.tick_values(limits[axis][0], limits[axis][1])
+            for tick in ticks:
+                if limits[axis][0] <= tick <= limits[axis][1]:
+                    tick_pos = iden[axis] * transforms[axis](
+                        tick) - 0.05 * iden[(axis + 1) % 2]
+                    ticks_group.add(
+                        _make_sprite(string=str(round(tick, 1)),
+                                     position=tick_pos.tolist(),
+                                     size=self._tick_size))
+        return ticks_group
+
+    def zoom(self, box):
+        self._transformx.zoom(low=box['left'], high=box['right'])
+        self._transformy.zoom(low=box['bottom'], high=box['top'])
+        self._apply_zoom()
+
+    def _apply_zoom(self):
+        for artist in self._artists:
+            artist._apply_transform()
+        self.remove(self.ticks)
+        self.ticks = self._make_ticks(
+            limits=[[box['left'], box['right']], [box['bottom'], box['top']],
+                    [0, 0]])
+        self.add(self.ticks)
+
+    def reset(self):
+        self._transformx.reset()
+        self._transformy.reset()
 
 
 # class Outline(p3.Group):

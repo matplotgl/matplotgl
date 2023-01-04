@@ -11,6 +11,7 @@ class Line:
 
     def __init__(self, ax, x, y, color='blue') -> None:
 
+        self._ax = ax
         self._x = x
         self._y = y
         self._geometry = p3.BufferGeometry(
@@ -18,7 +19,8 @@ class Line:
                 'position':
                 p3.BufferAttribute(
                     array=np.array([self._x, self._y,
-                                    np.zeros_like(self._x)]).T),
+                                    np.zeros_like(self._x)],
+                                   dtype='float32').T),
             })
         self._material = p3.LineBasicMaterial(color=color, linewidth=1)
         self._line = p3.Line(geometry=self._geometry, material=self._material)
@@ -31,4 +33,18 @@ class Line:
         ymin = self._y.min()
         ymax = self._y.max()
         pady = pad * (ymax - ymin)
-        return (xmin - padx, xmax + padx, ymin - pady, ymax + pady)
+        return {
+            'left': xmin - padx,
+            'right': xmax + padx,
+            'bottom': ymin - pady,
+            'top': ymax + pady
+        }
+
+    def _apply_transform(self):
+        self._geometry.attributes['position'].array = np.array(
+            [
+                self._ax._transformx(self._x),
+                self._ax._transformy(self._y),
+                np.zeros_like(self._x)
+            ],
+            dtype='float32').T

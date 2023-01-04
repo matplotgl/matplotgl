@@ -37,6 +37,7 @@ class Figure(ipw.HBox):
     def __init__(self) -> None:
 
         background_color = "#f0f0f0"
+        self._axes = []
 
         # Make background to enable box zoom
         self._background_geometry = p3.BoxGeometry(width=200,
@@ -93,10 +94,12 @@ class Figure(ipw.HBox):
         super().__init__([self.toolbar, self.renderer])
 
     def home(self, *args):
-        self.camera.left = -0.1
-        self.camera.right = 1.1
-        self.camera.bottom = -0.1
-        self.camera.top = 1.1
+        for ax in self._axes:
+            ax.reset()
+        # self.camera.left = -0.1
+        # self.camera.right = 1.1
+        # self.camera.bottom = -0.1
+        # self.camera.top = 1.1
 
     def toggle_pickers(self, change):
         if change['new']:
@@ -129,10 +132,17 @@ class Figure(ipw.HBox):
             if self._zoom_mouse_moved:
                 array = self._zoom_rect_line.geometry.attributes[
                     'position'].array
-                self.camera.left = array[:, 0].min()
-                self.camera.right = array[:, 0].max()
-                self.camera.bottom = array[:, 1].min()
-                self.camera.top = array[:, 1].max()
+                for ax in self._axes:
+                    ax.zoom({
+                        'left': array[:, 0].min(),
+                        'right': array[:, 0].max(),
+                        'bottom': array[:, 1].min(),
+                        'top': array[:, 1].max()
+                    })
+                # self.camera.left = array[:, 0].min()
+                # self.camera.right = array[:, 0].max()
+                # self.camera.bottom = array[:, 1].min()
+                # self.camera.top = array[:, 1].max()
                 self._zoom_mouse_moved = False
 
     def on_mouse_move(self, change):
