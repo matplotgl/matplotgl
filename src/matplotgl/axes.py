@@ -49,14 +49,14 @@ def _make_sprite(string: str,
     return p3.Sprite(material=sm, position=position, scale=[size, size, size])
 
 
-def _get_offsets(limits: Tuple[float], axis: int, ind: int) -> np.ndarray:
-    """
-    Compute offsets for n dimensions, along the edges of the box.
-    """
-    offsets = np.array([limits[i][ind] for i in range(3)])
-    print(offsets, axis)
-    offsets[axis] = -0.05
-    return offsets
+# def _get_offsets(limits: Tuple[float], axis: int, ind: int) -> np.ndarray:
+#     """
+#     Compute offsets for n dimensions, along the edges of the box.
+#     """
+#     offsets = np.array([limits[i][ind] for i in range(3)])
+#     print(offsets, axis)
+#     offsets[axis] = -0.05
+#     return offsets
 
 
 def _make_ticks(limits, tick_size: float, ndim=2) -> p3.Group:
@@ -70,7 +70,7 @@ def _make_ticks(limits, tick_size: float, ndim=2) -> p3.Group:
         ticks = ticker_.tick_values(limits[axis][0], limits[axis][1])
         for tick in ticks:
             if limits[axis][0] <= tick <= limits[axis][1]:
-                tick_pos = iden[axis] * tick + _get_offsets(limits, axis, 0)
+                tick_pos = iden[axis] * tick - 0.05 * iden[(axis + 1) % 2]
                 ticks_group.add(
                     _make_sprite(string=str(round(tick, 1)),
                                  position=tick_pos.tolist(),
@@ -132,6 +132,7 @@ class Axes(p3.Group):
         self.xmax = 1.0
         self.ymin = 0.0
         self.ymax = 1.0
+        self._transformx
         self._fig = None
 
         self._geometry = p3.BufferGeometry(
@@ -161,6 +162,9 @@ class Axes(p3.Group):
     def plot(self, *args, **kwargs):
         from .plot import plot as p
         return p(self, *args, **kwargs)
+
+    def autoscale(self):
+        
 
     def get_figure(self):
         return self._fig

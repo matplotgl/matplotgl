@@ -76,15 +76,19 @@ class Figure(ipw.HBox):
         ],
                               background=background_color)
         self.controls = p3.OrbitControls(controlling=self.camera)
-        self.renderer = p3.Renderer(camera=self.camera,
-                                    scene=self.scene,
-                                    controls=[self.controls],
-                                    width=self.width,
-                                    height=self.height)
+        self.renderer = p3.Renderer(
+            camera=self.camera,
+            scene=self.scene,
+            controls=[self.controls],
+            width=self.width,
+            height=self.height,
+            # antialiasing=True
+        )
         self.toolbar = Toolbar()
         self.toolbar._home.on_click(self.home)
         self.toolbar._zoom.observe(self.toggle_pickers, names='value')
         self._zoom_mouse_down = False
+        self._zoom_mouse_moved = False
 
         super().__init__([self.toolbar, self.renderer])
 
@@ -115,20 +119,25 @@ class Figure(ipw.HBox):
         self._zoom_rect_line.geometry.attributes['position'].array = np.array(
             [[x, x, x, x, x], [y, y, y, y, y], [0, 0, 0, 0, 0]]).T
         self._zoom_rect_line.visible = True
-        print(x, y, z, self._zoom_rect_line.visible)
+        print(x, y, z, self._zoom_rect_line.visible, self.camera.near,
+              self.camera.far)
 
     def on_mouse_up(self, *ignored):
         if self._zoom_mouse_down:
             self._zoom_mouse_down = False
             self._zoom_rect_line.visible = False
-            array = self._zoom_rect_line.geometry.attributes['position'].array
-            self.camera.left = array[:, 0].min()
-            self.camera.right = array[:, 0].max()
-            self.camera.bottom = array[:, 1].min()
-            self.camera.top = array[:, 1].max()
+            if self._zoom_mouse_moved:
+                array = self._zoom_rect_line.geometry.attributes[
+                    'position'].array
+                self.camera.left = array[:, 0].min()
+                self.camera.right = array[:, 0].max()
+                self.camera.bottom = array[:, 1].min()
+                self.camera.top = array[:, 1].max()
+                self._zoom_mouse_moved = False
 
     def on_mouse_move(self, change):
         if self._zoom_mouse_down:
+            self._zoom_mouse_moved = True
             x, y, z = change['new']
             new_pos = self._zoom_rect_line.geometry.attributes[
                 'position'].array.copy()
