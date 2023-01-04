@@ -9,7 +9,7 @@ from typing import List, Tuple
 
 class Line:
 
-    def __init__(self, x, y, color='blue') -> None:
+    def __init__(self, ax, x, y, color='blue') -> None:
 
         self._x = x
         self._y = y
@@ -22,3 +22,13 @@ class Line:
             })
         self._material = p3.LineBasicMaterial(color=color, linewidth=1)
         self._line = p3.Line(geometry=self._geometry, material=self._material)
+
+    def get_bbox(self):
+        pad = 0.03
+        xmin = self._x.min()
+        xmax = self._x.max()
+        padx = pad * (xmax - xmin)
+        ymin = self._y.min()
+        ymax = self._y.max()
+        pady = pad * (ymax - ymin)
+        return (xmin - padx, xmax + padx, ymin - pady, ymax + pady)

@@ -134,14 +134,14 @@ class Axes(p3.Group):
         self.ymax = 1.0
         self._transformx
         self._fig = None
+        self._artists = []
 
         self._geometry = p3.BufferGeometry(
             attributes={
                 'position':
-                p3.BufferAttribute(array=np.array([[
-                    self.xmin, self.xmin, self.xmax, self.xmax, self.xmin
-                ], [self.ymin, self.ymax, self.ymax, self.ymin, self.ymin],
-                                                   [0, 0, 0, 0, 0]]).T),
+                p3.BufferAttribute(array=np.array(
+                    [[0, 0, 1, 1, 0], [0, 1, 1, 0, 0], [0, 0, 0, 0, 0]],
+                    dtype='float32').T),
             })
         self._material = p3.LineBasicMaterial(color='black', linewidth=1)
         self._outline = p3.Line(geometry=self._geometry,
@@ -164,7 +164,22 @@ class Axes(p3.Group):
         return p(self, *args, **kwargs)
 
     def autoscale(self):
-        
+        xmin = np.inf
+        xmax = np.NINF
+        ymin = np.inf
+        ymax = np.NINF
+        for artist in self.artists:
+            lims = artist.get_bbox()
+            xmin = min(lims['left'], xmin)
+            xmax = min(lims['right'], xmax)
+            ymin = min(lims['bottom'], ymin)
+            ymax = min(lims['top'], ymax)
+        # if artist is not None:
+
+    def add_artist(self, artist):
+        # self.autoscale(artist)
+
+        self._fig.scene.add(artist._line)
 
     def get_figure(self):
         return self._fig
