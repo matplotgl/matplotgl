@@ -4,39 +4,12 @@ import ipywidgets as ipw
 import numpy as np
 import pythreejs as p3
 
-# N = 1000
-
-# # geometry = p3.BufferGeometry(
-# #     attributes={
-# #         'position':|
-# #         p3.BufferAttribute(array=20.0 * (np.random.random((N, 3)) - 0.5).astype('float32')),
-# #         'color':
-# #         p3.BufferAttribute(array=np.zeros([N, 3], dtype='float32'))
-# #     })
-
-# # geometry = p3.BoxGeometry(
-# #     width=20,
-# #     height=15,
-# #     widthSegments=1,
-# #     heightSegments=1)
-
-# geometry = p3.BoxGeometry(width=200,
-#                           height=200,
-#                           widthSegments=1,
-#                           heightSegments=1)
-
-# # material = p3.PointsMaterial(vertexColors='VertexColors', size=5)
-# material = p3.MeshBasicMaterial(color='red', side='DoubleSide')
-
-# mesh = p3.Mesh(geometry=geometry, material=material)
-# # mesh.rotateY(0.5 * np.pi)
-
 
 class Figure(ipw.HBox):
 
     def __init__(self) -> None:
 
-        background_color = "#f0f0f0"
+        self.background_color = "#f0f0f0"
         self._axes = []
 
         # Make background to enable box zoom
@@ -45,7 +18,7 @@ class Figure(ipw.HBox):
                                                    widthSegments=1,
                                                    heightSegments=1)
         self._background_material = p3.MeshBasicMaterial(
-            color=background_color, side='DoubleSide')
+            color=self.background_color, side='DoubleSide')
         self._background_mesh = p3.Mesh(geometry=self._background_geometry,
                                         material=self._background_material,
                                         position=(0, 0, -100))
@@ -75,7 +48,7 @@ class Figure(ipw.HBox):
         self.scene = p3.Scene(children=[
             self.camera, self._background_mesh, self._zoom_rect_line
         ],
-                              background=background_color)
+                              background=self.background_color)
         self.controls = p3.OrbitControls(controlling=self.camera)
         self.renderer = p3.Renderer(
             camera=self.camera,
@@ -96,10 +69,6 @@ class Figure(ipw.HBox):
     def home(self, *args):
         for ax in self._axes:
             ax.reset()
-        # self.camera.left = -0.1
-        # self.camera.right = 1.1
-        # self.camera.bottom = -0.1
-        # self.camera.top = 1.1
 
     def toggle_pickers(self, change):
         if change['new']:
@@ -139,10 +108,6 @@ class Figure(ipw.HBox):
                         'bottom': array[:, 1].min(),
                         'top': array[:, 1].max()
                     })
-                # self.camera.left = array[:, 0].min()
-                # self.camera.right = array[:, 0].max()
-                # self.camera.bottom = array[:, 1].min()
-                # self.camera.top = array[:, 1].max()
                 self._zoom_mouse_moved = False
 
     def on_mouse_move(self, change):
@@ -158,28 +123,5 @@ class Figure(ipw.HBox):
 
     def add_axes(self, ax):
         self._axes.append(ax)
-        ax._fig = self
+        ax.set_figure(self)
         self.camera.add(ax)
-
-
-# # Picker object
-# down_picker = p3.Picker(controlling=mesh, event='mousedown')
-# up_picker = p3.Picker(controlling=mesh, event='mouseup')
-# move_picker = p3.Picker(controlling=mesh, event='mousemove')
-# renderer.controls = renderer.controls + [down_picker, up_picker, move_picker]
-
-# def on_mouse_down(change):
-#     print("mouse DOWN")
-#     print(down_picker.point)
-
-# def on_mouse_up(change):
-#     print("mouse UP")
-#     print(up_picker.point)
-
-# def on_mouse_move(change):
-#     print("mouse MOVE")
-#     print(move_picker.point)
-
-# down_picker.observe(on_mouse_down, names=['point'])
-# up_picker.observe(on_mouse_up, names=['point'])
-# move_picker.observe(on_mouse_move, names=['point'])
