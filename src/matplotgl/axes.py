@@ -170,7 +170,7 @@ class Axes:
         high = transform.high
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(low, high)
-        string = f'<svg width=\"50px\" height=\"{height}\">'
+        string = f'<svg width=\"30px\" height=\"{height}\">'
         values = []
         for tick in ticks:
             if low <= tick <= high:
@@ -178,8 +178,8 @@ class Axes:
                 tick_pos = height - (trans_pos * height)
                 string += (
                     f'<text fill=\"#000000\" font-size=\"{self.font_size}\" '
-                    f'x=\"20\" y=\"{tick_pos}\"'
-                    'dominant-baseline=\"middle\" text-anchor=\"right\">'
+                    f'x=\"30\" y=\"{tick_pos}\"'
+                    'dominant-baseline=\"middle\" text-anchor=\"end\">'
                     f'{value_to_string(tick)}</text>')
                 values.append(trans_pos)
         string += '</svg>'

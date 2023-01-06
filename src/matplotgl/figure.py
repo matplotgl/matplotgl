@@ -87,7 +87,7 @@ class Figure(ipw.GridBox):
             layout=ipw.Layout(
                 grid_template_rows='auto auto auto',
                 # grid_template_columns='5% 5% 85% 5%',
-                grid_template_columns='auto auto auto auto',
+                grid_template_columns='40px 40px auto 0px',
                 grid_template_areas='''
             ". . top ."
             "toolbar left main right"
