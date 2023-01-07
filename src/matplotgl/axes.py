@@ -24,33 +24,36 @@ from typing import List, Tuple
 #                            transparent=True)
 #     return p3.Sprite(material=sm, position=position, scale=[size, size, size])
 
+# def _make_outline_array(xticks, yticks, tick_size=0.02):
+#     x = [0]
+#     for yt in yticks:
+#         x += [0, tick_size, 0]
+#     x += [0, 1, 1]
+#     for xt in xticks[::-1]:
+#         x += [xt, xt, xt]
+#     x += [0]
 
-def _make_outline_array(xticks, yticks, tick_size=0.02):
-    x = [0]
-    for yt in yticks:
-        x += [0, tick_size, 0]
-    x += [0, 1, 1]
-    for xt in xticks[::-1]:
-        x += [xt, xt, xt]
-    x += [0]
-
-    y = [0]
-    for yt in yticks:
-        y += [yt, yt, yt]
-    y += [1, 1, 0]
-    for xt in xticks[::-1]:
-        y += [0, tick_size, 0]
-    y += [0]
-    return np.array([x, y, np.zeros_like(x)], dtype='float32').T
+#     y = [0]
+#     for yt in yticks:
+#         y += [yt, yt, yt]
+#     y += [1, 1, 0]
+#     for xt in xticks[::-1]:
+#         y += [0, tick_size, 0]
+#     y += [0]
+#     return np.array([x, y, np.zeros_like(x)], dtype='float32').T
 
 
-def _make_outline(xticks, yticks, color='black', tick_size=0.02):
-    array = _make_outline_array(xticks=xticks,
-                                yticks=yticks,
-                                tick_size=tick_size)
-    geom = p3.BufferGeometry(attributes={
-        'position': p3.BufferAttribute(array=array),
-    })
+def _make_outline(color='black'):
+    # array = _make_outline_array(xticks=xticks,
+    #                             yticks=yticks,
+    #                             tick_size=tick_size)
+    geom = p3.BufferGeometry(
+        attributes={
+            'position':
+            p3.BufferAttribute(array=np.array(
+                [[0, 0, 1, 1, 0], [0, 1, 1, 0, 0], [0, 0, 0, 0, 0]],
+                dtype='float32').T),
+        })
     material = p3.LineBasicMaterial(color=color, linewidth=1)
     return p3.Line(geometry=geom, material=material)
 
@@ -92,12 +95,13 @@ class Axes:
         self._width = 100
         self._height = 100
         self.font_size = 14
+        self._svg_offset = 1
 
-        xticklabels, xticks = self._make_xticks(transform=self._transformx,
-                                                width=self._width)
-        yticklabels, yticks = self._make_yticks(transform=self._transformy,
-                                                height=self._height)
-        self._outline = _make_outline(xticks=xticks, yticks=yticks)
+        xticklabels = self._make_xticks(transform=self._transformx,
+                                        width=self._width)
+        yticklabels = self._make_yticks(transform=self._transformy,
+                                        height=self._height)
+        self._outline = _make_outline()
 
         self._left_bar = ipw.HTML(yticklabels)
         self._right_bar = ipw.HTML()
@@ -139,7 +143,7 @@ class Axes:
     def get_figure(self):
         return self._fig
 
-    def _make_xticks(self, transform, width) -> str:
+    def _make_xticks(self, transform, width, tick_size=5) -> str:
         """
         Create tick labels on outline edges
         """
@@ -148,21 +152,25 @@ class Axes:
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(low, high)
         string = f'<svg width=\"{width}\" height=\"{self.font_size}\">'
-        values = []
+        # values = []
         for tick in ticks:
             if low <= tick <= high:
                 trans_pos = transform(tick)
-                tick_pos = trans_pos * width
+                x = trans_pos * width + self._svg_offset
                 string += (
                     f'<text fill=\"#000000\" font-size=\"{self.font_size}\" '
-                    f'x=\"{tick_pos}\" y=\"{0.5*self.font_size}\"'
-                    'dominant-baseline=\"middle\" text-anchor=\"middle\">'
+                    f'x=\"{x}\" y=\"{tick_size + 5}\"'
+                    'dominant-baseline=\"text-top\" text-anchor=\"middle\">'
                     f'{value_to_string(tick)}</text>')
-                values.append(trans_pos)
+                string += (
+                    f'<line x1=\"{x}\" y1=\"0\" x2=\"{x}\"'
+                    f'y2=\"{tick_size}\" style=\"stroke:rgb(0,0,0);stroke-width:1\" />'
+                )
+                # values.append(trans_pos)
         string += '</svg>'
-        return string, values
+        return string
 
-    def _make_yticks(self, transform, height) -> str:
+    def _make_yticks(self, transform, height, tick_size=5) -> str:
         """
         Create tick labels on outline edges
         """
@@ -170,20 +178,24 @@ class Axes:
         high = transform.high
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(low, high)
-        string = f'<svg width=\"30px\" height=\"{height}\">'
-        values = []
+        string = f'<svg width=\"40px\" height=\"{height}\">'
+        # values = []
+        x = 41
         for tick in ticks:
             if low <= tick <= high:
                 trans_pos = transform(tick)
-                tick_pos = height - (trans_pos * height)
+                y = height - (trans_pos * height) - self._svg_offset
                 string += (
                     f'<text fill=\"#000000\" font-size=\"{self.font_size}\" '
-                    f'x=\"30\" y=\"{tick_pos}\"'
+                    f'x=\"{x - tick_size - 5}\" y=\"{y}\"'
                     'dominant-baseline=\"middle\" text-anchor=\"end\">'
                     f'{value_to_string(tick)}</text>')
-                values.append(trans_pos)
+                string += (
+                    f'<line x1=\"{x}\" y1=\"{y}\" x2=\"{x-tick_size}\"'
+                    f'y2=\"{y}\" style=\"stroke:rgb(0,0,0);stroke-width:1\" />'
+                )
         string += '</svg>'
-        return string, values
+        return string
 
     def zoom(self, box):
         self._transformx.zoom(low=self._transformx.inverse(box['left']),
@@ -200,16 +212,16 @@ class Axes:
         #     limits=[[self._transformx.low, self._transformx.high],
         #             [self._transformy.low, self._transformy.high], [0, 0]])
         # self.add(self.ticks)
-        yticklabels, yticks = self._make_yticks(transform=self._transformy,
-                                                height=self._height)
+        yticklabels = self._make_yticks(transform=self._transformy,
+                                        height=self._height)
         self._left_bar.value = yticklabels
-        xticklabels, xticks = self._make_xticks(transform=self._transformx,
-                                                width=self._width)
+        xticklabels = self._make_xticks(transform=self._transformx,
+                                        width=self._width)
         self._bottom_bar.value = xticklabels
-        self._outline.geometry.attributes[
-            'position'].array = _make_outline_array(xticks=xticks,
-                                                    yticks=yticks,
-                                                    tick_size=0.02)
+        # self._outline.geometry.attributes[
+        #     'position'].array = _make_outline_array(xticks=xticks,
+        #                                             yticks=yticks,
+        #                                             tick_size=0.02)
 
     def reset(self):
         self._transformx.reset()

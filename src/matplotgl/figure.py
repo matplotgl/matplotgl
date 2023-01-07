@@ -51,7 +51,8 @@ class Figure(ipw.GridBox):
         ],
                               background=self.background_color)
         self.controls = p3.OrbitControls(controlling=self.camera,
-                                         enableZoom=False)
+                                         enableZoom=False,
+                                         enablePan=False)
         self.renderer = p3.Renderer(
             camera=self.camera,
             scene=self.scene,
@@ -85,9 +86,9 @@ class Figure(ipw.GridBox):
                 self.bottom_bar, self.top_bar
             ],
             layout=ipw.Layout(
-                grid_template_rows='auto auto auto',
+                grid_template_rows='auto auto 20px',
                 # grid_template_columns='5% 5% 85% 5%',
-                grid_template_columns='40px 40px auto 0px',
+                grid_template_columns='40px 42px auto 0px',
                 grid_template_areas='''
             ". . top ."
             "toolbar left main right"
