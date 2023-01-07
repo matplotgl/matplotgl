@@ -40,8 +40,8 @@ class Figure(ipw.GridBox):
                                        material=self._zoom_rect_material,
                                        visible=False)
 
-        self.width = 700
-        self.height = 450
+        self.width = 600
+        self.height = 400
         # self.camera = p3.PerspectiveCamera(position=[0.0, 0, 2],
         #                                    aspect=self.width / self.height)
         # self.camera = p3.OrthographicCamera(-0.1, 1.1, 1.1, -0.1, -1, 100)
@@ -86,14 +86,15 @@ class Figure(ipw.GridBox):
                 self.bottom_bar, self.top_bar
             ],
             layout=ipw.Layout(
-                grid_template_rows='auto auto 20px',
+                grid_template_rows=f'auto {self.height-2}px 40px',
                 # grid_template_columns='5% 5% 85% 5%',
                 grid_template_columns='40px 42px auto 0px',
                 grid_template_areas='''
             ". . top ."
             "toolbar left main right"
             ". . bottom ."
-            '''))
+            ''',
+                grid_gap='0px 0px'))
 
     def home(self, *args):
         for ax in self._axes:

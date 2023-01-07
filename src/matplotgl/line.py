@@ -12,8 +12,8 @@ class Line:
     def __init__(self, ax, x, y, color='blue', zorder=0) -> None:
 
         self._ax = ax
-        self._x = x
-        self._y = y
+        self._x = np.asarray(x)
+        self._y = np.asarray(y)
         self._zorder = zorder
         self._geometry = p3.BufferGeometry(
             attributes={

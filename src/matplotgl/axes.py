@@ -103,9 +103,11 @@ class Axes:
                                         height=self._height)
         self._outline = _make_outline()
 
-        self._left_bar = ipw.HTML(yticklabels)
+        self._left_bar = ipw.HTML(yticklabels,
+                                  layout={'height': f'{self._height}px'})
         self._right_bar = ipw.HTML()
         self._bottom_bar = ipw.HTML(xticklabels)
+        # self._bottom_bar = ipw.Button(icon='home', layout={'width': '600px'})
         self._top_bar = ipw.HTML()
         # self._frame = _make_frame()
 
@@ -151,7 +153,7 @@ class Axes:
         high = transform.high
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(low, high)
-        string = f'<svg width=\"{width}\" height=\"{self.font_size}\">'
+        string = f'<svg width=\"{width}\" height=\"36\" >'
         # values = []
         for tick in ticks:
             if low <= tick <= high:
@@ -160,7 +162,7 @@ class Axes:
                 string += (
                     f'<text fill=\"#000000\" font-size=\"{self.font_size}\" '
                     f'x=\"{x}\" y=\"{tick_size + 5}\"'
-                    'dominant-baseline=\"text-top\" text-anchor=\"middle\">'
+                    'dominant-baseline=\"hanging\" text-anchor=\"middle\">'
                     f'{value_to_string(tick)}</text>')
                 string += (
                     f'<line x1=\"{x}\" y1=\"0\" x2=\"{x}\"'
@@ -178,7 +180,7 @@ class Axes:
         high = transform.high
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(low, high)
-        string = f'<svg width=\"40px\" height=\"{height}\">'
+        string = f'<svg width=\"40px\" height=\"{height - 50}\">'
         # values = []
         x = 41
         for tick in ticks:
@@ -212,6 +214,7 @@ class Axes:
         #     limits=[[self._transformx.low, self._transformx.high],
         #             [self._transformy.low, self._transformy.high], [0, 0]])
         # self.add(self.ticks)
+        print('_apply_zoom', self._height)
         yticklabels = self._make_yticks(transform=self._transformy,
                                         height=self._height)
         self._left_bar.value = yticklabels
@@ -233,6 +236,7 @@ class Axes:
         self._fig.camera.add(self._outline)
         self._width = self._fig.width
         self._height = self._fig.height
+        self._left_bar.layout = {'height': f'{self._height}px'}
         self._fig.left_bar.children += (self._left_bar, )
         self._fig.bottom_bar.children += (self._bottom_bar, )
 
