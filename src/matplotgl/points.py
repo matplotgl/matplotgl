@@ -7,7 +7,7 @@ import numpy as np
 from typing import List, Tuple
 
 
-class Line:
+class Points:
 
     def __init__(self, ax, x, y, color='blue', zorder=0) -> None:
 
@@ -24,8 +24,9 @@ class Line:
                 ],
                                                   dtype='float32').T),
             })
-        self._material = p3.LineBasicMaterial(color=color, linewidth=1)
-        self._line = p3.Line(geometry=self._geometry, material=self._material)
+        self._material = p3.PointsMaterial(color=color, size=3)
+        self._points = p3.Points(geometry=self._geometry,
+                                 material=self._material)
 
     def get_bbox(self):
         pad = 0.03
@@ -52,4 +53,17 @@ class Line:
             dtype='float32').T
 
     def get(self):
-        return self._line
+        return self._points
+
+    def set_xdata(self, x):
+        self._x = np.asarray(x)
+        self._apply_transform()
+
+    def set_ydata(self, y):
+        self._y = np.asarray(y)
+        self._apply_transform()
+
+    def set_data(self, xy):
+        self._x = np.asarray(xy[:, 0])
+        self._y = np.asarray(xy[:, 1])
+        self._apply_transform()

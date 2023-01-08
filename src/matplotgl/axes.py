@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Matplotgl contributors (https://github.com/matplotgl)
 
+from .spine import Spine
 from .transform import Transform
 from .utils import value_to_string
 from .widgets import HBar
@@ -11,21 +12,19 @@ from matplotlib import ticker
 import numpy as np
 from typing import List, Tuple
 
-
-def _make_sprite(string: str,
-                 position: Tuple[float, float, float],
-                 color: str = "black",
-                 size: float = 1.0) -> p3.Sprite:
-    """
-    Make a text-based sprite for axis tick.
-    """
-    sm = p3.SpriteMaterial(map=p3.TextTexture(string=string,
-                                              color=color,
-                                              size=300,
-                                              squareTexture=False),
-                           transparent=True)
-    return p3.Sprite(material=sm, position=position, scale=[size, size, size])
-
+# def _make_sprite(string: str,
+#                  position: Tuple[float, float, float],
+#                  color: str = "black",
+#                  size: float = 1.0) -> p3.Sprite:
+#     """
+#     Make a text-based sprite for axis tick.
+#     """
+#     sm = p3.SpriteMaterial(map=p3.TextTexture(string=string,
+#                                               color=color,
+#                                               size=300,
+#                                               squareTexture=False),
+#                            transparent=True)
+#     return p3.Sprite(material=sm, position=position, scale=[size, size, size])
 
 # def _make_outline_array(xticks, yticks, tick_size=0.02):
 #     x = [0]
@@ -131,7 +130,19 @@ class Axes(HBar):
         #                                 width=self._width)
         # yticklabels = self._make_yticks(transform=self._transformy,
         #                                 height=self._height)
-        self._outline = _make_outline()
+        self._left_spine = Spine(kind='left', transform=self._transformy)
+        self._right_spine = Spine(kind='right',
+                                  transform=self._transformy,
+                                  ticks=False)
+        self._bottom_spine = Spine(kind='bottom', transform=self._transformx)
+        self._top_spine = Spine(kind='top',
+                                transform=self._transformx,
+                                ticks=False)
+
+        # self._outline = p3.Group([
+        #     self._left_spine, self._right_spine, self._bottom_spine,
+        #     self._top_spine
+        # ])
         self._frame = _make_frame()
 
         # self.width = 600
@@ -141,8 +152,9 @@ class Axes(HBar):
         self.camera = p3.OrthographicCamera(-0.1, 1.1, 1.1, -0.1, -1, 100)
         # self.camera = p3.OrthographicCamera(-0.001, 1.0, 1.0, -0.001, -1, 100)
         self.scene = p3.Scene(children=[
-            self.camera, self._background_mesh, self._outline, self._frame,
-            self._zoom_rect_line
+            self.camera, self._background_mesh, self._left_spine,
+            self._right_spine, self._bottom_spine, self._top_spine,
+            self._frame, self._zoom_rect_line
         ],
                               background=self.background_color)
         self.controls = p3.OrbitControls(controlling=self.camera,
@@ -192,12 +204,16 @@ class Axes(HBar):
             if self._zoom_mouse_moved:
                 array = self._zoom_rect_line.geometry.attributes[
                     'position'].array
-                self.zoom({
-                    'left': array[:, 0].min(),
-                    'right': array[:, 0].max(),
-                    'bottom': array[:, 1].min(),
-                    'top': array[:, 1].max()
-                })
+                # self.zoom({
+                #     'left': array[:, 0].min(),
+                #     'right': array[:, 0].max(),
+                #     'bottom': array[:, 1].min(),
+                #     'top': array[:, 1].max()
+                # })
+                self.camera.left = array[:, 0].min()
+                self.camera.right = array[:, 0].max()
+                self.camera.bottom = array[:, 1].min()
+                self.camera.top = array[:, 1].max()
                 self._zoom_mouse_moved = False
 
     def on_mouse_move(self, change):
@@ -231,6 +247,10 @@ class Axes(HBar):
         from .plot import plot as p
         return p(self, *args, **kwargs)
 
+    def scatter(self, *args, **kwargs):
+        from .scatter import scatter as s
+        return s(self, *args, **kwargs)
+
     def autoscale(self):
         xmin = np.inf
         xmax = np.NINF
@@ -249,75 +269,75 @@ class Axes(HBar):
 
     def add_artist(self, artist):
         self._artists.append(artist)
-        self.scene.add(artist._line)
+        self.scene.add(artist.get())
 
     def get_figure(self):
         return self._fig
 
-    def _make_xticks(self, transform, width, tick_size=5) -> str:
-        """
-        Create tick labels on outline edges
-        """
-        low = transform.low
-        high = transform.high
-        ticker_ = ticker.AutoLocator()
-        ticks = ticker_.tick_values(low, high)
-        # string = f'<svg width=\"{width}\" height=\"36\" >'
-        # values = []
+    # def _make_xticks(self, transform, width, tick_size=5) -> str:
+    #     """
+    #     Create tick labels on outline edges
+    #     """
+    #     low = transform.low
+    #     high = transform.high
+    #     ticker_ = ticker.AutoLocator()
+    #     ticks = ticker_.tick_values(low, high)
+    #     # string = f'<svg width=\"{width}\" height=\"36\" >'
+    #     # values = []
 
-        string = '<div style=\"position: relative;\">'
-        for tick in ticks:
-            if low <= tick <= high:
-                trans_pos = transform(tick)
-                x = trans_pos * width - 5
-                # string += (
-                #     f'<text fill=\"#000000\" font-size=\"{self.font_size}\" '
-                #     f'x=\"{x}\" y=\"{tick_size + 5}\"'
-                #     'dominant-baseline=\"hanging\" text-anchor=\"middle\">'
-                #     f'{value_to_string(tick)}</text>')
-                # string += (
-                #     f'<line x1=\"{x}\" y1=\"0\" x2=\"{x}\"'
-                #     f'y2=\"{tick_size}\" style=\"stroke:rgb(0,0,0);stroke-width:1\" />'
-                # )
-                string += (
-                    f'<div style=\"position: absolute; left: {x}px;top: 0px;'
-                    f'text-align: center;display:inline-block;\">{value_to_string(tick)}</div>'
-                )
-                string += f'<div style=\"position: absolute; left: {x}px;top: -8px\">&#9589;</div>'
+    #     string = '<div style=\"position: relative;\">'
+    #     for tick in ticks:
+    #         if low <= tick <= high:
+    #             trans_pos = transform(tick)
+    #             x = trans_pos * width - 5
+    #             # string += (
+    #             #     f'<text fill=\"#000000\" font-size=\"{self.font_size}\" '
+    #             #     f'x=\"{x}\" y=\"{tick_size + 5}\"'
+    #             #     'dominant-baseline=\"hanging\" text-anchor=\"middle\">'
+    #             #     f'{value_to_string(tick)}</text>')
+    #             # string += (
+    #             #     f'<line x1=\"{x}\" y1=\"0\" x2=\"{x}\"'
+    #             #     f'y2=\"{tick_size}\" style=\"stroke:rgb(0,0,0);stroke-width:1\" />'
+    #             # )
+    #             string += (
+    #                 f'<div style=\"position: absolute; left: {x}px;top: 0px;'
+    #                 f'text-align: center;display:inline-block;\">{value_to_string(tick)}</div>'
+    #             )
+    #             string += f'<div style=\"position: absolute; left: {x}px;top: -8px\">&#9589;</div>'
 
-                # values.append(trans_pos)
-        string += '</div>'
-        return string
+    #             # values.append(trans_pos)
+    #     string += '</div>'
+    #     return string
 
-    def _make_yticks(self, transform, height, tick_size=5) -> str:
-        """
-        Create tick labels on outline edges
-        """
-        low = transform.low
-        high = transform.high
-        ticker_ = ticker.AutoLocator()
-        ticks = ticker_.tick_values(low, high)
-        # string = f'<svg width=\"40px\" height=\"{height - 10}\">'
-        string = ''
-        string = '<div style=\"position: relative;\">'
-        # values = []
-        x = 41
-        for tick in ticks:
-            if low <= tick <= high:
-                trans_pos = transform(tick)
-                y = height - (trans_pos * height) - 18
-                # string += (
-                #     f'<text fill=\"#000000\" font-size=\"{self.font_size}\" '
-                #     f'x=\"{x - tick_size - 5}\" y=\"{y}\"'
-                #     'dominant-baseline=\"middle\" text-anchor=\"end\">'
-                #     f'{value_to_string(tick)}</text>')
-                # string += (
-                #     f'<line x1=\"{x}\" y1=\"{y}\" x2=\"{x-tick_size}\"'
-                #     f'y2=\"{y}\" style=\"stroke:rgb(0,0,0);stroke-width:1\" />'
-                # )
-                string += f'<div style=\"position: absolute; top: {y}px;\">{value_to_string(tick)}</div>'
-        string += '</div>'
-        return string
+    # def _make_yticks(self, transform, height, tick_size=5) -> str:
+    #     """
+    #     Create tick labels on outline edges
+    #     """
+    #     low = transform.low
+    #     high = transform.high
+    #     ticker_ = ticker.AutoLocator()
+    #     ticks = ticker_.tick_values(low, high)
+    #     # string = f'<svg width=\"40px\" height=\"{height - 10}\">'
+    #     string = ''
+    #     string = '<div style=\"position: relative;\">'
+    #     # values = []
+    #     x = 41
+    #     for tick in ticks:
+    #         if low <= tick <= high:
+    #             trans_pos = transform(tick)
+    #             y = height - (trans_pos * height) - 18
+    #             # string += (
+    #             #     f'<text fill=\"#000000\" font-size=\"{self.font_size}\" '
+    #             #     f'x=\"{x - tick_size - 5}\" y=\"{y}\"'
+    #             #     'dominant-baseline=\"middle\" text-anchor=\"end\">'
+    #             #     f'{value_to_string(tick)}</text>')
+    #             # string += (
+    #             #     f'<line x1=\"{x}\" y1=\"{y}\" x2=\"{x-tick_size}\"'
+    #             #     f'y2=\"{y}\" style=\"stroke:rgb(0,0,0);stroke-width:1\" />'
+    #             # )
+    #             string += f'<div style=\"position: absolute; top: {y}px;\">{value_to_string(tick)}</div>'
+    #     string += '</div>'
+    #     return string
 
     def zoom(self, box):
         self._transformx.zoom(low=self._transformx.inverse(box['left']),
@@ -329,6 +349,11 @@ class Axes(HBar):
     def _apply_zoom(self):
         for artist in self._artists:
             artist._apply_transform()
+
+        self._left_spine.set_transform(self._transformy)
+        self._right_spine.set_transform(self._transformy)
+        self._bottom_spine.set_transform(self._transformx)
+        self._top_spine.set_transform(self._transformx)
         # self.remove(self.ticks)
         # self.ticks = self._make_ticks(
         #     limits=[[self._transformx.low, self._transformx.high],
@@ -347,9 +372,13 @@ class Axes(HBar):
         # #                                             tick_size=0.02)
 
     def reset(self):
-        self._transformx.reset()
-        self._transformy.reset()
-        self._apply_zoom()
+        # self._transformx.reset()
+        # self._transformy.reset()
+        # self._apply_zoom()
+        self.camera.left = -0.1
+        self.camera.right = 1.1
+        self.camera.top = 1.1
+        self.camera.bottom = -0.1
 
     def set_figure(self, fig):
         self._fig = fig
