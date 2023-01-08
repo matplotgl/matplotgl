@@ -95,7 +95,7 @@ class Axes:
         self._width = 100
         self._height = 100
         self.font_size = 14
-        self._svg_offset = 1
+        self._html_div_offset = 8
 
         xticklabels = self._make_xticks(transform=self._transformx,
                                         width=self._width)
@@ -103,8 +103,9 @@ class Axes:
                                         height=self._height)
         self._outline = _make_outline()
 
-        self._left_bar = ipw.HTML(yticklabels,
-                                  layout={'height': f'{self._height}px'})
+        # self._left_bar = ipw.HTML(yticklabels,
+        #                           layout={'height': f'{self._height}px'})
+        self._left_bar = ipw.HTML(yticklabels)
         self._right_bar = ipw.HTML()
         self._bottom_bar = ipw.HTML(xticklabels)
         # self._bottom_bar = ipw.Button(icon='home', layout={'width': '600px'})
@@ -153,23 +154,31 @@ class Axes:
         high = transform.high
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(low, high)
-        string = f'<svg width=\"{width}\" height=\"36\" >'
+        # string = f'<svg width=\"{width}\" height=\"36\" >'
         # values = []
+
+        string = '<div style=\"position: relative;\">'
         for tick in ticks:
             if low <= tick <= high:
                 trans_pos = transform(tick)
-                x = trans_pos * width + self._svg_offset
+                x = trans_pos * width - 5
+                # string += (
+                #     f'<text fill=\"#000000\" font-size=\"{self.font_size}\" '
+                #     f'x=\"{x}\" y=\"{tick_size + 5}\"'
+                #     'dominant-baseline=\"hanging\" text-anchor=\"middle\">'
+                #     f'{value_to_string(tick)}</text>')
+                # string += (
+                #     f'<line x1=\"{x}\" y1=\"0\" x2=\"{x}\"'
+                #     f'y2=\"{tick_size}\" style=\"stroke:rgb(0,0,0);stroke-width:1\" />'
+                # )
                 string += (
-                    f'<text fill=\"#000000\" font-size=\"{self.font_size}\" '
-                    f'x=\"{x}\" y=\"{tick_size + 5}\"'
-                    'dominant-baseline=\"hanging\" text-anchor=\"middle\">'
-                    f'{value_to_string(tick)}</text>')
-                string += (
-                    f'<line x1=\"{x}\" y1=\"0\" x2=\"{x}\"'
-                    f'y2=\"{tick_size}\" style=\"stroke:rgb(0,0,0);stroke-width:1\" />'
+                    f'<div style=\"position: absolute; left: {x}px;top: 0px;'
+                    f'text-align: center;display:inline-block;\">{value_to_string(tick)}</div>'
                 )
+                string += f'<div style=\"position: absolute; left: {x}px;top: -8px\">&#9589;</div>'
+
                 # values.append(trans_pos)
-        string += '</svg>'
+        string += '</div>'
         return string
 
     def _make_yticks(self, transform, height, tick_size=5) -> str:
@@ -180,23 +189,26 @@ class Axes:
         high = transform.high
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(low, high)
-        string = f'<svg width=\"40px\" height=\"{height - 50}\">'
+        # string = f'<svg width=\"40px\" height=\"{height - 10}\">'
+        string = ''
+        string = '<div style=\"position: relative;\">'
         # values = []
         x = 41
         for tick in ticks:
             if low <= tick <= high:
                 trans_pos = transform(tick)
-                y = height - (trans_pos * height) - self._svg_offset
-                string += (
-                    f'<text fill=\"#000000\" font-size=\"{self.font_size}\" '
-                    f'x=\"{x - tick_size - 5}\" y=\"{y}\"'
-                    'dominant-baseline=\"middle\" text-anchor=\"end\">'
-                    f'{value_to_string(tick)}</text>')
-                string += (
-                    f'<line x1=\"{x}\" y1=\"{y}\" x2=\"{x-tick_size}\"'
-                    f'y2=\"{y}\" style=\"stroke:rgb(0,0,0);stroke-width:1\" />'
-                )
-        string += '</svg>'
+                y = height - (trans_pos * height) - 18
+                # string += (
+                #     f'<text fill=\"#000000\" font-size=\"{self.font_size}\" '
+                #     f'x=\"{x - tick_size - 5}\" y=\"{y}\"'
+                #     'dominant-baseline=\"middle\" text-anchor=\"end\">'
+                #     f'{value_to_string(tick)}</text>')
+                # string += (
+                #     f'<line x1=\"{x}\" y1=\"{y}\" x2=\"{x-tick_size}\"'
+                #     f'y2=\"{y}\" style=\"stroke:rgb(0,0,0);stroke-width:1\" />'
+                # )
+                string += f'<div style=\"position: absolute; top: {y}px;\">{value_to_string(tick)}</div>'
+        string += '</div>'
         return string
 
     def zoom(self, box):
@@ -236,7 +248,7 @@ class Axes:
         self._fig.camera.add(self._outline)
         self._width = self._fig.width
         self._height = self._fig.height
-        self._left_bar.layout = {'height': f'{self._height}px'}
+        # self._left_bar.layout = {'height': f'{self._height-2}px'}
         self._fig.left_bar.children += (self._left_bar, )
         self._fig.bottom_bar.children += (self._bottom_bar, )
 
