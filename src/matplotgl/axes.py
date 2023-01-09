@@ -4,7 +4,7 @@
 from .spine import Spine
 from .transform import Transform
 from .utils import value_to_string
-from .widgets import HBar
+from .widgets import Box
 
 import ipywidgets as ipw
 import pythreejs as p3
@@ -82,7 +82,7 @@ def _make_frame(color='white'):
                    position=[0, 0, -1])
 
 
-class Axes(HBar):
+class Axes(Box):
 
     def __init__(self) -> None:
 
@@ -91,8 +91,8 @@ class Axes(HBar):
         self.xmax = 1.0
         self.ymin = 0.0
         self.ymax = 1.0
-        self._transformx = Transform()
-        self._transformy = Transform()
+        # self._transformx = Transform()
+        # self._transformy = Transform()
         self._fig = None
         self._artists = []
         # self._width = 200
@@ -107,7 +107,7 @@ class Axes(HBar):
             color=self.background_color, side='DoubleSide')
         self._background_mesh = p3.Mesh(geometry=self._background_geometry,
                                         material=self._background_material,
-                                        position=(0, 0, -100))
+                                        position=(0, 0, -200))
 
         self._zoom_down_picker = p3.Picker(controlling=self._background_mesh,
                                            event='mousedown')
@@ -120,10 +120,9 @@ class Axes(HBar):
             attributes={
                 'position': p3.BufferAttribute(array=np.zeros((5, 3))),
             })
-        self._zoom_rect_material = p3.LineBasicMaterial(color='black',
-                                                        linewidth=1)
         self._zoom_rect_line = p3.Line(geometry=self._zoom_rect_geometry,
-                                       material=self._zoom_rect_material,
+                                       material=p3.LineBasicMaterial(
+                                           color='black', linewidth=1),
                                        visible=False)
 
         # xticklabels = self._make_xticks(transform=self._transformx,
@@ -149,8 +148,8 @@ class Axes(HBar):
         # self.height = 400
         # self.camera = p3.PerspectiveCamera(position=[0.0, 0, 2],
         #                                    aspect=self.width / self.height)
-        self.camera = p3.OrthographicCamera(-0.1, 1.1, 1.1, -0.1, -1, 100)
-        # self.camera = p3.OrthographicCamera(-0.001, 1.0, 1.0, -0.001, -1, 100)
+        # self.camera = p3.OrthographicCamera(-0.1, 1.1, 1.1, -0.1, -1, 100)
+        self.camera = p3.OrthographicCamera(-0.001, 1.0, 1.0, -0.001, -1, 100)
         self.scene = p3.Scene(children=[
             self.camera, self._background_mesh, self._left_spine,
             self._right_spine, self._bottom_spine, self._top_spine,

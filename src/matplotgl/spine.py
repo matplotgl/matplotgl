@@ -1,11 +1,12 @@
 from .utils import make_sprite, value_to_string
 
+import ipywidgets as ipw
 from matplotlib import ticker
 import numpy as np
 import pythreejs as p3
 
 
-class Spine(p3.Group):
+class Spine(ipw.HTML):
 
     def __init__(self,
                  kind,
