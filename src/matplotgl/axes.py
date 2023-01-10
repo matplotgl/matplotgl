@@ -4,7 +4,7 @@
 from .spine import Spine
 from .transform import Transform
 from .utils import value_to_string
-from .widgets import Box
+from .widgets import Box, HBar, VBar
 
 import ipywidgets as ipw
 import pythreejs as p3
@@ -82,7 +82,7 @@ def _make_frame(color='white'):
                    position=[0, 0, -1])
 
 
-class Axes(Box):
+class Axes(HBar):
 
     def __init__(self) -> None:
 
@@ -104,7 +104,9 @@ class Axes(Box):
                                                    widthSegments=1,
                                                    heightSegments=1)
         self._background_material = p3.MeshBasicMaterial(
-            color=self.background_color, side='DoubleSide')
+            color=self.background_color,
+            # color='red',
+            side='DoubleSide')
         self._background_mesh = p3.Mesh(geometry=self._background_geometry,
                                         material=self._background_material,
                                         position=(0, 0, -200))
@@ -125,18 +127,16 @@ class Axes(Box):
                                            color='black', linewidth=1),
                                        visible=False)
 
-        # xticklabels = self._make_xticks(transform=self._transformx,
-        #                                 width=self._width)
-        # yticklabels = self._make_yticks(transform=self._transformy,
-        #                                 height=self._height)
-        self._left_spine = Spine(kind='left', transform=self._transformy)
-        self._right_spine = Spine(kind='right',
-                                  transform=self._transformy,
-                                  ticks=False)
-        self._bottom_spine = Spine(kind='bottom', transform=self._transformx)
-        self._top_spine = Spine(kind='top',
-                                transform=self._transformx,
-                                ticks=False)
+        # xticklabels = self._make_xticks()
+        # yticklabels = self._make_yticks()
+        # self._left_spine = Spine(kind='left', transform=self._transformy)
+        # self._right_spine = Spine(kind='right',
+        #                           transform=self._transformy,
+        #                           ticks=False)
+        # self._bottom_spine = Spine(kind='bottom', transform=self._transformx)
+        # self._top_spine = Spine(kind='top',
+        #                         transform=self._transformx,
+        #                         ticks=False)
 
         # self._outline = p3.Group([
         #     self._left_spine, self._right_spine, self._bottom_spine,
@@ -149,13 +149,19 @@ class Axes(Box):
         # self.camera = p3.PerspectiveCamera(position=[0.0, 0, 2],
         #                                    aspect=self.width / self.height)
         # self.camera = p3.OrthographicCamera(-0.1, 1.1, 1.1, -0.1, -1, 100)
-        self.camera = p3.OrthographicCamera(-0.001, 1.0, 1.0, -0.001, -1, 100)
+        self.camera = p3.OrthographicCamera(-0.001, 1.0, 1.0, -0.001, -1, 300)
+        # self.scene = p3.Scene(children=[
+        #     self.camera, self._background_mesh, self._left_spine,
+        #     self._right_spine, self._bottom_spine, self._top_spine,
+        #     self._frame, self._zoom_rect_line
+        # ],
+        #                       background=self.background_color)
+
         self.scene = p3.Scene(children=[
-            self.camera, self._background_mesh, self._left_spine,
-            self._right_spine, self._bottom_spine, self._top_spine,
-            self._frame, self._zoom_rect_line
+            self.camera, self._background_mesh, self._zoom_rect_line
         ],
                               background=self.background_color)
+
         self.controls = p3.OrbitControls(controlling=self.camera,
                                          enableZoom=False,
                                          enablePan=False)
@@ -166,24 +172,31 @@ class Axes(Box):
             width=200,
             height=200,
             # antialiasing=True
-        )
+            layout={'border': 'solid 2px'})
 
         self._zoom_mouse_down = False
         self._zoom_mouse_moved = False
+        self._zoom_xmin = None
+        self._zoom_xmax = None
+        self._zoom_ymin = None
+        self._zoom_ymax = None
 
-        # # self._left_bar = ipw.HTML(yticklabels,
-        # #                           layout={'height': f'{self._height}px'})
-        # self._left_bar = ipw.HTML(yticklabels)
-        # self._right_bar = ipw.HTML()
-        # self._bottom_bar = ipw.HTML(xticklabels)
-        # # self._bottom_bar = ipw.Button(icon='home', layout={'width': '600px'})
-        # self._top_bar = ipw.HTML()
+        # self._left_bar = ipw.HTML(yticklabels,
+        #                           layout={'height': f'{self._height}px'})
+        self._left_bar = ipw.HTML(self._make_yticks())
+        self._right_bar = ipw.HTML()
+        self._bottom_bar = ipw.HTML(self._make_xticks())
+        # self._bottom_bar = ipw.Button(icon='home', layout={'width': '600px'})
+        self._top_bar = ipw.HTML()
         # # self._frame = _make_frame()
 
         # # limits = [[self.xmin, self.xmax], [self.ymin, self.ymax], [0, 0]]
         # # self.ticks = self._make_ticks(limits=limits)
 
-        super().__init__([self.renderer])
+        super().__init__([
+            self._left_bar,
+            VBar([self._top_bar, self.renderer]), self._right_bar
+        ])
         # for obj in (self._outline, self.ticks, self._frame):
         #     self.add(obj)
 
@@ -209,10 +222,10 @@ class Axes(Box):
                 #     'bottom': array[:, 1].min(),
                 #     'top': array[:, 1].max()
                 # })
-                self.camera.left = array[:, 0].min()
-                self.camera.right = array[:, 0].max()
-                self.camera.bottom = array[:, 1].min()
-                self.camera.top = array[:, 1].max()
+                self.zoom([
+                    array[:, 0].min(), array[:, 0].max(), array[:, 1].min(),
+                    array[:, 1].max()
+                ])
                 self._zoom_mouse_moved = False
 
     def on_mouse_move(self, change):
@@ -261,10 +274,30 @@ class Axes(Box):
             xmax = max(lims['right'], xmax)
             ymin = min(lims['bottom'], ymin)
             ymax = max(lims['top'], ymax)
+        self.xmin = xmin
+        self.xmax = xmax
+        self.ymin = ymin
+        self.ymax = ymax
 
-        self._transformx.update(low=xmin, high=xmax)
-        self._transformy.update(low=ymin, high=ymax)
-        self._apply_zoom()
+        # self._transformx.update(low=xmin, high=xmax)
+        # self._transformy.update(low=ymin, high=ymax)
+        # self._apply_zoom()
+        self._background_mesh.geometry = p3.BoxGeometry(
+            width=1.1 * (self.xmax - self.xmin),
+            height=1.1 * (self.ymax - self.ymin),
+            widthSegments=1,
+            heightSegments=1)
+        # self._background_geometry.width = 1.1 * (xmax - xmin)
+        # self._background_geometry.height = 1.1 * (ymax - ymin)
+        self._background_mesh.position = [
+            0.5 * (self.xmin + self.xmax), 0.5 * (self.ymin + self.ymax),
+            self._background_mesh.position[-1]
+        ]
+        # self.camera.left = self.xmin
+        # self.camera.right = self.xmax
+        # self.camera.bottom = self.ymin
+        # self.camera.top = self.ymax
+        self.reset()
 
     def add_artist(self, artist):
         self._artists.append(artist)
@@ -273,86 +306,60 @@ class Axes(Box):
     def get_figure(self):
         return self._fig
 
-    # def _make_xticks(self, transform, width, tick_size=5) -> str:
-    #     """
-    #     Create tick labels on outline edges
-    #     """
-    #     low = transform.low
-    #     high = transform.high
-    #     ticker_ = ticker.AutoLocator()
-    #     ticks = ticker_.tick_values(low, high)
-    #     # string = f'<svg width=\"{width}\" height=\"36\" >'
-    #     # values = []
+    def _make_xticks(self, left, right) -> str:
+        """
+        Create tick labels on outline edges
+        """
+        ticker_ = ticker.AutoLocator()
+        ticks = ticker_.tick_values(left, right)
+        string = '<div style=\"position: relative;\">'
+        for tick in ticks:
+            if left <= tick <= right:
+                x = tick * self.width - 5
+                string += (
+                    f'<div style=\"position: absolute; left: {x}px;top: 0px;'
+                    f'text-align: center;display:inline-block;\">{value_to_string(tick)}</div>'
+                )
+                string += f'<div style=\"position: absolute; left: {x}px;top: -8px\">&#9589;</div>'
+        string += '</div>'
+        return string
 
-    #     string = '<div style=\"position: relative;\">'
-    #     for tick in ticks:
-    #         if low <= tick <= high:
-    #             trans_pos = transform(tick)
-    #             x = trans_pos * width - 5
-    #             # string += (
-    #             #     f'<text fill=\"#000000\" font-size=\"{self.font_size}\" '
-    #             #     f'x=\"{x}\" y=\"{tick_size + 5}\"'
-    #             #     'dominant-baseline=\"hanging\" text-anchor=\"middle\">'
-    #             #     f'{value_to_string(tick)}</text>')
-    #             # string += (
-    #             #     f'<line x1=\"{x}\" y1=\"0\" x2=\"{x}\"'
-    #             #     f'y2=\"{tick_size}\" style=\"stroke:rgb(0,0,0);stroke-width:1\" />'
-    #             # )
-    #             string += (
-    #                 f'<div style=\"position: absolute; left: {x}px;top: 0px;'
-    #                 f'text-align: center;display:inline-block;\">{value_to_string(tick)}</div>'
-    #             )
-    #             string += f'<div style=\"position: absolute; left: {x}px;top: -8px\">&#9589;</div>'
-
-    #             # values.append(trans_pos)
-    #     string += '</div>'
-    #     return string
-
-    # def _make_yticks(self, transform, height, tick_size=5) -> str:
-    #     """
-    #     Create tick labels on outline edges
-    #     """
-    #     low = transform.low
-    #     high = transform.high
-    #     ticker_ = ticker.AutoLocator()
-    #     ticks = ticker_.tick_values(low, high)
-    #     # string = f'<svg width=\"40px\" height=\"{height - 10}\">'
-    #     string = ''
-    #     string = '<div style=\"position: relative;\">'
-    #     # values = []
-    #     x = 41
-    #     for tick in ticks:
-    #         if low <= tick <= high:
-    #             trans_pos = transform(tick)
-    #             y = height - (trans_pos * height) - 18
-    #             # string += (
-    #             #     f'<text fill=\"#000000\" font-size=\"{self.font_size}\" '
-    #             #     f'x=\"{x - tick_size - 5}\" y=\"{y}\"'
-    #             #     'dominant-baseline=\"middle\" text-anchor=\"end\">'
-    #             #     f'{value_to_string(tick)}</text>')
-    #             # string += (
-    #             #     f'<line x1=\"{x}\" y1=\"{y}\" x2=\"{x-tick_size}\"'
-    #             #     f'y2=\"{y}\" style=\"stroke:rgb(0,0,0);stroke-width:1\" />'
-    #             # )
-    #             string += f'<div style=\"position: absolute; top: {y}px;\">{value_to_string(tick)}</div>'
-    #     string += '</div>'
-    #     return string
+    def _make_yticks(self, bottom, top) -> str:
+        """
+        Create tick labels on outline edges
+        """
+        ticker_ = ticker.AutoLocator()
+        ticks = ticker_.tick_values(bottom, top)
+        string = '<div style=\"position: relative;\">'
+        for tick in ticks:
+            if bottom <= tick <= top:
+                y = self.height - (tick * self.height) - 18
+                string += f'<div style=\"position: absolute; top: {y}px;\">{value_to_string(tick)}</div>'
+        string += '</div>'
+        return string
 
     def zoom(self, box):
-        self._transformx.zoom(low=self._transformx.inverse(box['left']),
-                              high=self._transformx.inverse(box['right']))
-        self._transformy.zoom(low=self._transformy.inverse(box['bottom']),
-                              high=self._transformy.inverse(box['top']))
-        self._apply_zoom()
+        self._zoom_xmin = box[0]
+        self._zoom_xmax = box[1]
+        self._zoom_ymin = box[2]
+        self._zoom_ymax = box[3]
+        self.camera.left = self._zoom_xmin
+        self.camera.right = self._zoom_xmax
+        self.camera.bottom = self._zoom_ymin
+        self.camera.top = self._zoom_ymax
+        self._bottom_bar.value = self._make_xticks(left=self._zoom_xmin,
+                                                   right=self._zoom_xmax)
+        self._left_bar.value = self._make_yticks(bottom=self._zoom_ymin,
+                                                 top=self._zoom_ymax)
 
     def _apply_zoom(self):
         for artist in self._artists:
             artist._apply_transform()
 
-        self._left_spine.set_transform(self._transformy)
-        self._right_spine.set_transform(self._transformy)
-        self._bottom_spine.set_transform(self._transformx)
-        self._top_spine.set_transform(self._transformx)
+        # self._left_spine.set_transform(self._transformy)
+        # self._right_spine.set_transform(self._transformy)
+        # self._bottom_spine.set_transform(self._transformx)
+        # self._top_spine.set_transform(self._transformx)
         # self.remove(self.ticks)
         # self.ticks = self._make_ticks(
         #     limits=[[self._transformx.low, self._transformx.high],
@@ -374,10 +381,19 @@ class Axes(Box):
         # self._transformx.reset()
         # self._transformy.reset()
         # self._apply_zoom()
-        self.camera.left = -0.1
-        self.camera.right = 1.1
-        self.camera.top = 1.1
-        self.camera.bottom = -0.1
+        # self.camera.left = -0.1
+        # self.camera.right = 1.1
+        # self.camera.top = 1.1
+        # self.camera.bottom = -0.1
+
+        self.camera.left = self.xmin
+        self.camera.right = self.xmax
+        self.camera.bottom = self.ymin
+        self.camera.top = self.ymax
+        self._bottom_bar.value = self._make_xticks(left=self.xmin,
+                                                   right=self.xmax)
+        self._left_bar.value = self._make_yticks(bottom=self.ymin,
+                                                 top=self.ymax)
 
     def set_figure(self, fig):
         self._fig = fig

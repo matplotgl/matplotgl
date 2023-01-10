@@ -102,6 +102,7 @@ class Figure(HBar):
             ax.reset()
 
     def toggle_pickers(self, change):
+        print(change)
         for ax in self.axes:
             if change['new']:
                 ax._zoom_down_picker.observe(ax.on_mouse_down, names=['point'])
