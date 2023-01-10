@@ -183,9 +183,11 @@ class Axes(HBar):
 
         # self._left_bar = ipw.HTML(yticklabels,
         #                           layout={'height': f'{self._height}px'})
-        self._left_bar = ipw.HTML(self._make_yticks())
+        self._left_bar = ipw.HTML(
+            self._make_yticks(bottom=self.ymin, top=self.ymax))
         self._right_bar = ipw.HTML()
-        self._bottom_bar = ipw.HTML(self._make_xticks())
+        self._bottom_bar = ipw.HTML(
+            self._make_xticks(left=self.xmin, right=self.xmax))
         # self._bottom_bar = ipw.Button(icon='home', layout={'width': '600px'})
         self._top_bar = ipw.HTML()
         # # self._frame = _make_frame()
@@ -195,7 +197,8 @@ class Axes(HBar):
 
         super().__init__([
             self._left_bar,
-            VBar([self._top_bar, self.renderer]), self._right_bar
+            VBar([self._top_bar, self.renderer, self._bottom_bar]),
+            self._right_bar
         ])
         # for obj in (self._outline, self.ticks, self._frame):
         #     self.add(obj)
@@ -312,15 +315,14 @@ class Axes(HBar):
         """
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(left, right)
-        string = '<div style=\"position: relative;\">'
+        string = '<div style=\"position: relative; height: 20px;\">'
         for tick in ticks:
             if left <= tick <= right:
-                x = tick * self.width - 5
+                x = (tick - left) / (right - left) * self.width - 5
                 string += (
-                    f'<div style=\"position: absolute; left: {x}px;top: 0px;'
-                    f'text-align: center;display:inline-block;\">{value_to_string(tick)}</div>'
+                    f'<div style=\"position: absolute; left: {x}px; top: 0px;\">{value_to_string(tick)}</div>'
                 )
-                string += f'<div style=\"position: absolute; left: {x}px;top: -8px\">&#9589;</div>'
+                # string += f'<div style=\"position: absolute; left: {x}px;top: -8px\">&#9589;</div>'
         string += '</div>'
         return string
 
@@ -330,10 +332,11 @@ class Axes(HBar):
         """
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(bottom, top)
-        string = '<div style=\"position: relative;\">'
+        string = f'<div style=\"position: relative;width: 40px;height: {self.height - 18}px;\">'
         for tick in ticks:
             if bottom <= tick <= top:
-                y = self.height - (tick * self.height) - 18
+                y = self.height - ((tick - bottom) /
+                                   (top - bottom) * self.height) - 10
                 string += f'<div style=\"position: absolute; top: {y}px;\">{value_to_string(tick)}</div>'
         string += '</div>'
         return string
