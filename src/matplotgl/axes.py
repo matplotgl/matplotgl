@@ -336,8 +336,8 @@ class Axes(HBar):
         for tick in ticks:
             if bottom <= tick <= top:
                 y = self.height - ((tick - bottom) /
-                                   (top - bottom) * self.height) - 10
-                string += f'<div style=\"position: absolute; top: {y}px;\">{value_to_string(tick)}</div>'
+                                   (top - bottom) * self.height) - 12
+                string += f'<div style=\"position: absolute; top: {y}px; right: -3px;\">{value_to_string(tick)} &#8211;</div>'
         string += '</div>'
         return string
 
