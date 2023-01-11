@@ -82,7 +82,7 @@ def _make_frame(color='white'):
                    position=[0, 0, -1])
 
 
-class Axes(HBar):
+class Axes(ipw.GridBox):
 
     def __init__(self) -> None:
 
@@ -95,8 +95,8 @@ class Axes(HBar):
         # self._transformy = Transform()
         self._fig = None
         self._artists = []
-        # self._width = 200
-        # self._height = 200
+        # self.width = 200
+        # self.height = 200
 
         # Make background to enable box zoom
         self._background_geometry = p3.BoxGeometry(width=2,
@@ -183,25 +183,66 @@ class Axes(HBar):
 
         # self._left_bar = ipw.HTML(yticklabels,
         #                           layout={'height': f'{self._height}px'})
-        self._left_bar = ipw.HTML(
-            self._make_yticks(bottom=self.ymin, top=self.ymax))
-        self._right_bar = ipw.HTML()
-        self._bottom_bar = ipw.HTML(
-            self._make_xticks(left=self.xmin, right=self.xmax))
+        self._leftspine = ipw.HTML(self._make_yticks(bottom=self.ymin,
+                                                     top=self.ymax),
+                                   layout={
+                                       'grid_area': 'leftspine',
+                                       'border': 'solid 1px'
+                                   })
+        self._rightspine = ipw.HTML(layout={
+            'grid_area': 'rightspine',
+            'display': 'none'
+        })
+        self._bottomspine = ipw.HTML(self._make_xticks(left=self.xmin,
+                                                       right=self.xmax),
+                                     layout={
+                                         'grid_area': 'bottomspine',
+                                         'border': 'solid 1px'
+                                     })
         # self._bottom_bar = ipw.Button(icon='home', layout={'width': '600px'})
-        self._top_bar = ipw.HTML()
+        self._topspine = ipw.HTML(layout={
+            'grid_area': 'topspine',
+            'display': 'none'
+        })
         # # self._frame = _make_frame()
+        self._title = ipw.HTML(layout={
+            'grid_area': 'title',
+            'display': 'none'
+        })
+        self._xlabel = ipw.HTML(layout={
+            'grid_area': 'xlabel',
+            'display': 'none'
+        })
+        self._ylabel = ipw.HTML(layout={
+            'grid_area': 'ylabel',
+            'display': 'none'
+        })
 
         # # limits = [[self.xmin, self.xmax], [self.ymin, self.ymax], [0, 0]]
         # # self.ticks = self._make_ticks(limits=limits)
+        # print(f'80px {self.width}px 50px')
+        # print(f'30px {self.height}px 30px')
 
-        super().__init__([
-            self._left_bar,
-            VBar([self._top_bar, self.renderer, self._bottom_bar]),
-            self._right_bar
-        ])
-        # for obj in (self._outline, self.ticks, self._frame):
-        #     self.add(obj)
+        super().__init__(children=[
+            self._xlabel, self._ylabel, self._title, self._leftspine,
+            self._rightspine, self._bottomspine, self._topspine, self.renderer
+        ],
+                         layout=ipw.Layout(
+                             grid_template_columns=f'80px {self.width}px 50px',
+                             grid_template_rows=f'30px {self.height}px 30px',
+                             grid_template_areas='''
+            ". topspine topspine"
+            "leftspine renderer rightspine"
+            "leftspine bottomspine bottomspine"
+            '''))
+
+        # super().__init__([
+        #     self._ylabel, self._left_spine,
+        #     VBar([self._top_spine, self.renderer, self._bottom_spine]),
+        #     self._right_spine
+        # ])
+        # # for obj in (self._outline, self.ticks, self._frame):
+        # #     self.add(obj)
 
     def on_mouse_down(self, change):
         self._zoom_mouse_down = True
@@ -317,7 +358,8 @@ class Axes(HBar):
         ticks = ticker_.tick_values(left, right)
         string = '<div style=\"position: relative; height: 20px;\">'
         for tick in ticks:
-            if left <= tick <= right:
+            if left + 0.02 * (right - left) <= tick <= right - 0.05 * (right -
+                                                                       left):
                 x = (tick - left) / (right - left) * self.width - 5
                 string += (
                     f'<div style=\"position: absolute; left: {x}px; top: 0px;\">{value_to_string(tick)}</div>'
@@ -332,9 +374,10 @@ class Axes(HBar):
         """
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(bottom, top)
-        string = f'<div style=\"position: relative;width: 40px;height: {self.height - 10}px;\">'
+        string = f'<div style=\"position: relative;width: 80px;height: {self.height - 10}px;\">'
+        delta = 0.02 * (top - bottom)
         for tick in ticks:
-            if bottom <= tick <= top:
+            if bottom + delta <= tick <= top - delta:
                 y = self.height - ((tick - bottom) /
                                    (top - bottom) * self.height) - 12
                 string += f'<div style=\"position: absolute; top: {y}px; right: -3px;\">{value_to_string(tick)} &#8211;</div>'
@@ -393,10 +436,19 @@ class Axes(HBar):
         self.camera.right = self.xmax
         self.camera.bottom = self.ymin
         self.camera.top = self.ymax
-        self._bottom_bar.value = self._make_xticks(left=self.xmin,
-                                                   right=self.xmax)
-        self._left_bar.value = self._make_yticks(bottom=self.ymin,
-                                                 top=self.ymax)
+        self._bottomspine.value = self._make_xticks(left=self.xmin,
+                                                    right=self.xmax)
+        self._leftspine.value = self._make_yticks(bottom=self.ymin,
+                                                  top=self.ymax)
+
+        # self.layout.grid_template_areas = '''
+        #     ". . topspine topspine"
+        #     "ylabel leftspine renderer rightspine"
+        #     ". leftspine bottomspine bottomspine"
+        #     ". . xlabel xlabel"
+        #     '''
+        self.layout.grid_template_rows = f'50px {self.height}px 50px'
+        self.layout.grid_template_columns = f'50px {self.width}px 50px'
 
     def set_figure(self, fig):
         self._fig = fig
@@ -407,7 +459,7 @@ class Axes(HBar):
             'border': 'solid 1px',
             'height': f'{self.height}px'
         }
-        self.layout = {'height': f'{self.height + 40}px'}
+        # self.layout = {'height': f'{self.height + 40}px'}
         # self._left_bar.layout = {'height': f'{self._height-2}px'}
         # self._fig.left_bar.children += (self._left_bar, )
         # self._fig.bottom_bar.children += (self._bottom_bar, )
