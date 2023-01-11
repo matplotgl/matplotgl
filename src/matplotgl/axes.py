@@ -322,7 +322,7 @@ class Axes(HBar):
                 string += (
                     f'<div style=\"position: absolute; left: {x}px; top: 0px;\">{value_to_string(tick)}</div>'
                 )
-                # string += f'<div style=\"position: absolute; left: {x}px;top: -8px\">&#9589;</div>'
+                string += f'<div style=\"position: absolute; left: {x}px;top: -8px\">&#9589;</div>'
         string += '</div>'
         return string
 
@@ -332,7 +332,7 @@ class Axes(HBar):
         """
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(bottom, top)
-        string = f'<div style=\"position: relative;width: 40px;height: {self.height - 18}px;\">'
+        string = f'<div style=\"position: relative;width: 40px;height: {self.height - 10}px;\">'
         for tick in ticks:
             if bottom <= tick <= top:
                 y = self.height - ((tick - bottom) /
@@ -403,6 +403,11 @@ class Axes(HBar):
         # self._fig.camera.add(self._outline)
         self.width = self._fig.width
         self.height = self._fig.height
+        self.renderer.layout = {
+            'border': 'solid 1px',
+            'height': f'{self.height}px'
+        }
+        self.layout = {'height': f'{self.height + 40}px'}
         # self._left_bar.layout = {'height': f'{self._height-2}px'}
         # self._fig.left_bar.children += (self._left_bar, )
         # self._fig.bottom_bar.children += (self._bottom_bar, )

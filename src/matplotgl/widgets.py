@@ -31,14 +31,24 @@ class VBar(VBox, Bar):
     """
     Vertical bar container.
     """
-    pass
+
+    def __getitem__(self, ind):
+        if isinstance(ind, int):
+            return self.children[ind]
+        elif isinstance(ind, slice):
+            return VBar(self.children[ind])
 
 
 class HBar(HBox, Bar):
     """
     Horizontal bar container.
     """
-    pass
+
+    def __getitem__(self, ind):
+        if isinstance(ind, int):
+            return self.children[ind]
+        elif isinstance(ind, slice):
+            return HBar(self.children[ind])
 
 
 class Box(VBar):
