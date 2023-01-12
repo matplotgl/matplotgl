@@ -520,7 +520,11 @@ class Axes(ipw.GridBox):
                 f'float:left;\">{label.replace(" ", "&nbsp;")}</div></div>')
         else:
             self._xlabel.value = ''
+        self._xlabel._raw_string = label
         self._update_layout()
+
+    def get_xlabel(self):
+        return self._xlabel._raw_string
 
     def set_ylabel(self, label, fontsize='1.3em'):
         if label:
@@ -532,7 +536,11 @@ class Axes(ipw.GridBox):
                 f'float:left;\">{label.replace(" ", "&nbsp;")}</div></div>')
         else:
             self._ylabel.value = ''
+        self._ylabel._raw_string = label
         self._update_layout()
+
+    def get_ylabel(self):
+        return self._ylabel._raw_string
 
     def set_title(self, title, fontsize='1.3em'):
         if title:
@@ -544,4 +552,8 @@ class Axes(ipw.GridBox):
                 f'float:left;\">{title.replace(" ", "&nbsp;")}</div></div>')
         else:
             self._title.value = ''
+        self._title._raw_string = title
         self._update_layout()
+
+    def get_title(self):
+        return self._title._raw_string
