@@ -194,7 +194,7 @@ class Axes(ipw.GridBox):
             })
         self._rightspine = ipw.HTML(layout={
             'grid_area': 'rightspine',
-            'display': 'none'
+            # 'display': 'none'
         })
         self._bottomspine = ipw.HTML(
             self._make_xticks(left=self.xmin, right=self.xmax),
@@ -210,15 +210,15 @@ class Axes(ipw.GridBox):
         # # self._frame = _make_frame()
         self._title = ipw.HTML(layout={
             'grid_area': 'title',
-            'display': 'none'
+            # 'display': 'none'
         })
         self._xlabel = ipw.HTML(layout={
             'grid_area': 'xlabel',
-            'display': 'none'
+            # 'display': 'none'
         })
         self._ylabel = ipw.HTML(layout={
             'grid_area': 'ylabel',
-            'display': 'none'
+            # 'display': 'none'
         })
 
         # # limits = [[self.xmin, self.xmax], [self.ymin, self.ymax], [0, 0]]
@@ -441,19 +441,57 @@ class Axes(ipw.GridBox):
         self.camera.right = self.xmax
         self.camera.bottom = self.ymin
         self.camera.top = self.ymax
+        # self.camera.position = [0., 0., 0.]
         self._bottomspine.value = self._make_xticks(left=self.xmin,
                                                     right=self.xmax)
         self._leftspine.value = self._make_yticks(bottom=self.ymin,
                                                   top=self.ymax)
+        self._update_layout()
 
+    def _update_layout(self):
         # self.layout.grid_template_areas = '''
         #     ". . topspine topspine"
         #     "ylabel leftspine renderer rightspine"
         #     ". leftspine bottomspine bottomspine"
         #     ". . xlabel xlabel"
         #     '''
-        self.layout.grid_template_columns = f'80px {self.width}px 50px'
-        self.layout.grid_template_rows = f'35px {self.height}px 35px'
+        areas = ''
+        columns = ''
+        rows = ''
+        if self._title.value:
+            areas += (f'\"{"." if self._ylabel.value else ""} '
+                      f'{"." if self._leftspine.value else ""} title .\"\n')
+            rows += '30px '
+        if self._topspine.value:
+            areas += (f'\"{"." if self._ylabel.value else ""} '
+                      f'{"." if self._leftspine.value else ""} '
+                      'topspine topspine\"\n')
+            rows += '35px '
+        areas += (f'\"{"ylabel" if self._ylabel.value else ""} '
+                  f'{"leftspine" if self._leftspine.value else ""} renderer '
+                  f'{"rightspine" if self._rightspine.value else "."}\"\n')
+        rows += f'{self.height}px '
+        if self._bottomspine.value:
+            areas += (f'\"{"." if self._ylabel.value else ""} '
+                      f'{"leftspine" if self._leftspine.value else ""} '
+                      'bottomspine bottomspine\"\n')
+            rows += '35px '
+        if self._xlabel.value:
+            areas += (
+                f'\"{"." if self._ylabel.value else ""} '
+                f'{"." if self._leftspine.value else ""} '
+                f'xlabel {"rightspine" if self._rightspine.value else "."}\"')
+            rows += '30px'
+
+        columns = (f'{"30px" if self._ylabel.value else ""} '
+                   f'{"80px" if self._leftspine.value else ""} '
+                   f'{self.width}px 35px')
+
+        print(areas)
+
+        self.layout.grid_template_columns = columns
+        self.layout.grid_template_rows = rows
+        self.layout.grid_template_areas = areas
 
     def set_figure(self, fig):
         self._fig = fig
@@ -471,3 +509,11 @@ class Axes(ipw.GridBox):
 
     def toggle_pan(self, value):
         self.controls.enablePan = value
+
+    def set_xlabel(self, label):
+        self._xlabel.value = f'<div style=\"position: relative;\">{label}</div>'
+        self._update_layout()
+
+    def set_ylabel(self, label):
+        self._ylabel.value = f'<div style=\"position: relative;\"><span style=\"transform: rotate(90deg);\">{label}</span></div>'
+        self._update_layout()

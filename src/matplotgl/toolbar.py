@@ -19,4 +19,4 @@ class Toolbar(ipw.VBox):
                                          'width': '36px',
                                          'padding': '0'
                                      })
-        super().__init__([self._home, self._zoom, self._pan])
+        super().__init__([self._home, self._zoom])
