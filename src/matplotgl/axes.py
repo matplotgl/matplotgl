@@ -510,10 +510,38 @@ class Axes(ipw.GridBox):
     def toggle_pan(self, value):
         self.controls.enablePan = value
 
-    def set_xlabel(self, label):
-        self._xlabel.value = f'<div style=\"position: relative;\">{label}</div>'
+    def set_xlabel(self, label, fontsize='1.3em'):
+        if label:
+            self._xlabel.value = (
+                '<div style=\"position:relative; '
+                f'width: {self.width}px; height: 30px;\">'
+                '<div style=\"position:relative; top: 50%;left: 50%; '
+                f'transform: translate(-50%, -50%); font-size: {fontsize};'
+                f'float:left;\">{label.replace(" ", "&nbsp;")}</div></div>')
+        else:
+            self._xlabel.value = ''
         self._update_layout()
 
-    def set_ylabel(self, label):
-        self._ylabel.value = f'<div style=\"position: relative;\"><span style=\"transform: rotate(90deg);\">{label}</span></div>'
+    def set_ylabel(self, label, fontsize='1.3em'):
+        if label:
+            self._ylabel.value = (
+                '<div style=\"position:relative; '
+                f'width: 30px; height: {self.height}px;\">'
+                '<div style=\"position:relative; top: 50%;left: 50%; '
+                f'transform: translate(-50%, -50%) rotate(-90deg); font-size: {fontsize};'
+                f'float:left;\">{label.replace(" ", "&nbsp;")}</div></div>')
+        else:
+            self._ylabel.value = ''
+        self._update_layout()
+
+    def set_title(self, title, fontsize='1.3em'):
+        if title:
+            self._title.value = (
+                '<div style=\"position:relative; '
+                f'width: {self.width}px; height: 30px;\">'
+                '<div style=\"position:relative; top: 50%;left: 50%; '
+                f'transform: translate(-50%, -50%); font-size: {fontsize};'
+                f'float:left;\">{title.replace(" ", "&nbsp;")}</div></div>')
+        else:
+            self._title.value = ''
         self._update_layout()
