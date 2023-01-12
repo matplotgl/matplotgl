@@ -172,7 +172,10 @@ class Axes(ipw.GridBox):
             width=200,
             height=200,
             # antialiasing=True
-            layout={'border': 'solid 2px'})
+            layout={
+                'border': 'solid 1px',
+                'grid_area': 'renderer'
+            })
 
         self._zoom_mouse_down = False
         self._zoom_mouse_moved = False
@@ -183,22 +186,22 @@ class Axes(ipw.GridBox):
 
         # self._left_bar = ipw.HTML(yticklabels,
         #                           layout={'height': f'{self._height}px'})
-        self._leftspine = ipw.HTML(self._make_yticks(bottom=self.ymin,
-                                                     top=self.ymax),
-                                   layout={
-                                       'grid_area': 'leftspine',
-                                       'border': 'solid 1px'
-                                   })
+        self._leftspine = ipw.HTML(
+            self._make_yticks(bottom=self.ymin, top=self.ymax),
+            layout={
+                'grid_area': 'leftspine',
+                #    'border': 'solid 1px'
+            })
         self._rightspine = ipw.HTML(layout={
             'grid_area': 'rightspine',
             'display': 'none'
         })
-        self._bottomspine = ipw.HTML(self._make_xticks(left=self.xmin,
-                                                       right=self.xmax),
-                                     layout={
-                                         'grid_area': 'bottomspine',
-                                         'border': 'solid 1px'
-                                     })
+        self._bottomspine = ipw.HTML(
+            self._make_xticks(left=self.xmin, right=self.xmax),
+            layout={
+                'grid_area': 'bottomspine',
+                #  'border': 'solid 1px'
+            })
         # self._bottom_bar = ipw.Button(icon='home', layout={'width': '600px'})
         self._topspine = ipw.HTML(layout={
             'grid_area': 'topspine',
@@ -223,13 +226,17 @@ class Axes(ipw.GridBox):
         # print(f'80px {self.width}px 50px')
         # print(f'30px {self.height}px 30px')
 
+        # div = ipw.HTML(
+        #     '<div style=\"width: 200px; height: 200px;background-color: red;\">renderer</div>',
+        #     layout={'grid_area': 'renderer'})
+
         super().__init__(children=[
             self._xlabel, self._ylabel, self._title, self._leftspine,
             self._rightspine, self._bottomspine, self._topspine, self.renderer
         ],
                          layout=ipw.Layout(
                              grid_template_columns=f'80px {self.width}px 50px',
-                             grid_template_rows=f'30px {self.height}px 30px',
+                             grid_template_rows=f'35px {self.height}px 35px',
                              grid_template_areas='''
             ". topspine topspine"
             "leftspine renderer rightspine"
@@ -356,15 +363,14 @@ class Axes(ipw.GridBox):
         """
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(left, right)
-        string = '<div style=\"position: relative; height: 20px;\">'
+        string = '<div style=\"position: relative; height: 30px;\">'
         for tick in ticks:
-            if left + 0.02 * (right - left) <= tick <= right - 0.05 * (right -
-                                                                       left):
+            if left + 0.01 * (right - left) <= tick <= right:
                 x = (tick - left) / (right - left) * self.width - 5
                 string += (
-                    f'<div style=\"position: absolute; left: {x}px; top: 0px;\">{value_to_string(tick)}</div>'
+                    f'<div style=\"position: absolute; left: {x}px; top: 4px;\">{value_to_string(tick)}</div>'
                 )
-                string += f'<div style=\"position: absolute; left: {x}px;top: -8px\">&#9589;</div>'
+                string += f'<div style=\"position: absolute; left: {x}px;top: -6px\">&#9589;</div>'
         string += '</div>'
         return string
 
@@ -375,12 +381,11 @@ class Axes(ipw.GridBox):
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(bottom, top)
         string = f'<div style=\"position: relative;width: 80px;height: {self.height - 10}px;\">'
-        delta = 0.02 * (top - bottom)
         for tick in ticks:
-            if bottom + delta <= tick <= top - delta:
+            if bottom <= tick <= top - 0.01 * (top - bottom):
                 y = self.height - ((tick - bottom) /
                                    (top - bottom) * self.height) - 12
-                string += f'<div style=\"position: absolute; top: {y}px; right: -3px;\">{value_to_string(tick)} &#8211;</div>'
+                string += f'<div style=\"position: absolute; top: {y}px; right: 1px;\">{value_to_string(tick)} &#8211;</div>'
         string += '</div>'
         return string
 
@@ -393,10 +398,10 @@ class Axes(ipw.GridBox):
         self.camera.right = self._zoom_xmax
         self.camera.bottom = self._zoom_ymin
         self.camera.top = self._zoom_ymax
-        self._bottom_bar.value = self._make_xticks(left=self._zoom_xmin,
-                                                   right=self._zoom_xmax)
-        self._left_bar.value = self._make_yticks(bottom=self._zoom_ymin,
-                                                 top=self._zoom_ymax)
+        self._bottomspine.value = self._make_xticks(left=self._zoom_xmin,
+                                                    right=self._zoom_xmax)
+        self._leftspine.value = self._make_yticks(bottom=self._zoom_ymin,
+                                                  top=self._zoom_ymax)
 
     def _apply_zoom(self):
         for artist in self._artists:
@@ -447,21 +452,22 @@ class Axes(ipw.GridBox):
         #     ". leftspine bottomspine bottomspine"
         #     ". . xlabel xlabel"
         #     '''
-        self.layout.grid_template_rows = f'50px {self.height}px 50px'
-        self.layout.grid_template_columns = f'50px {self.width}px 50px'
+        self.layout.grid_template_columns = f'80px {self.width}px 50px'
+        self.layout.grid_template_rows = f'35px {self.height}px 35px'
 
     def set_figure(self, fig):
         self._fig = fig
         # self._fig.camera.add(self._outline)
         self.width = self._fig.width
         self.height = self._fig.height
-        self.renderer.layout = {
-            'border': 'solid 1px',
-            'height': f'{self.height}px'
-        }
+        self.renderer.layout.height = f'{self.height}px'
+        self.renderer.layout.width = f'{self.width}px'
         # self.layout = {'height': f'{self.height + 40}px'}
         # self._left_bar.layout = {'height': f'{self._height-2}px'}
         # self._fig.left_bar.children += (self._left_bar, )
         # self._fig.bottom_bar.children += (self._bottom_bar, )
 
         # self._frame.material.color = self._fig.background_color
+
+    def toggle_pan(self, value):
+        self.controls.enablePan = value

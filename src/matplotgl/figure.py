@@ -67,6 +67,7 @@ class Figure(HBar):
         self.toolbar = Toolbar()
         self.toolbar._home.on_click(self.home)
         self.toolbar._zoom.observe(self.toggle_pickers, names='value')
+        self.toolbar._pan.observe(self.toggle_pan, names='value')
         # self._zoom_mouse_down = False
         # self._zoom_mouse_moved = False
 
@@ -102,7 +103,6 @@ class Figure(HBar):
             ax.reset()
 
     def toggle_pickers(self, change):
-        print(change)
         for ax in self.axes:
             if change['new']:
                 ax._zoom_down_picker.observe(ax.on_mouse_down, names=['point'])
@@ -117,6 +117,10 @@ class Figure(HBar):
                 ax._zoom_up_picker.unobserve_all()
                 ax._zoom_move_picker.unobserve_all()
                 ax.renderer.controls = [ax.controls]
+
+    def toggle_pan(self, change):
+        for ax in self.axes:
+            ax.toggle_pan(change['new'])
 
     def add_axes(self, ax):
         self.axes.append(ax)
