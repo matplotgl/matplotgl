@@ -487,8 +487,6 @@ class Axes(ipw.GridBox):
                    f'{"80px" if self._leftspine.value else ""} '
                    f'{self.width}px 35px')
 
-        print(areas)
-
         self.layout.grid_template_columns = columns
         self.layout.grid_template_rows = rows
         self.layout.grid_template_areas = areas
