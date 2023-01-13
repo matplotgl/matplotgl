@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2022 Scipp contributors (https://github.com/scipp)
+# Copyright (c) 2023 Matplotgl contributors (https://github.com/matplotgl)
 
 from ipywidgets import VBox, HBox, Widget
 
@@ -68,6 +68,5 @@ class Box(VBar):
     def __init__(self, widgets):
         children = []
         for view in widgets:
-            children.append(
-                HBar(view) if isinstance(view, (list, tuple)) else view)
+            children.append(HBar(view) if isinstance(view, (list, tuple)) else view)
         super().__init__(children)

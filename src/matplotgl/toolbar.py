@@ -1,14 +1,13 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2023 Matplotgl contributors (https://github.com/matplotgl)
+
 import ipywidgets as ipw
 
 
 class Toolbar(ipw.VBox):
 
     def __init__(self) -> None:
-        self._home = ipw.Button(icon='home',
-                                layout={
-                                    'width': '36px',
-                                    'padding': '0'
-                                })
+        self._home = ipw.Button(icon='home', layout={'width': '36px', 'padding': '0'})
         self._zoom = ipw.ToggleButton(icon='square-o',
                                       layout={
                                           'width': '36px',
