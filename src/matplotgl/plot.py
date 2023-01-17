@@ -4,8 +4,8 @@
 from .line import Line
 
 
-def plot(ax, x, y, **kwargs):
-    line = Line(x=x, y=y, **kwargs)
+def plot(ax, *args, **kwargs):
+    line = Line(*args, **kwargs)
     ax.add_artist(line)
     ax.autoscale()
     return line

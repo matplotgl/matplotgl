@@ -43,7 +43,7 @@ class Axes(ipw.GridBox):
 
         self._zoom_rect_geometry = p3.BufferGeometry(
             attributes={
-                'position': p3.BufferAttribute(array=np.zeros((5, 3))),
+                'position': p3.BufferAttribute(array=np.zeros((5, 3), dtype='float32')),
             })
         self._zoom_rect_line = p3.Line(geometry=self._zoom_rect_geometry,
                                        material=p3.LineBasicMaterial(color='black',
@@ -103,7 +103,7 @@ class Axes(ipw.GridBox):
         self._zoom_mouse_down = True
         x, y, z = change['new']
         self._zoom_rect_line.geometry.attributes['position'].array = np.array(
-            [[x, x, x, x, x], [y, y, y, y, y], [0, 0, 0, 0, 0]]).T
+            [[x, x, x, x, x], [y, y, y, y, y], [0, 0, 0, 0, 0]], dtype='float32').T
         self._zoom_rect_line.visible = True
 
     def on_mouse_up(self, *ignored):
@@ -142,14 +142,6 @@ class Axes(ipw.GridBox):
     @height.setter
     def height(self, h):
         self.renderer.height = h
-
-    def plot(self, *args, **kwargs):
-        from .plot import plot as p
-        return p(self, *args, **kwargs)
-
-    def scatter(self, *args, **kwargs):
-        from .scatter import scatter as s
-        return s(self, *args, **kwargs)
 
     def autoscale(self):
         xmin = np.inf
@@ -336,3 +328,15 @@ class Axes(ipw.GridBox):
 
     def get_title(self):
         return self._title._raw_string
+
+    def plot(self, *args, **kwargs):
+        from .plot import plot as p
+        return p(self, *args, **kwargs)
+
+    def scatter(self, *args, **kwargs):
+        from .scatter import scatter as s
+        return s(self, *args, **kwargs)
+
+    def imshow(self, *args, **kwargs):
+        from .imshow import imshow as im
+        return im(self, *args, **kwargs)
