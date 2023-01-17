@@ -11,7 +11,7 @@ import pythreejs as p3
 
 class Figure(HBar):
 
-    def __init__(self, figsize=(6., 4.)) -> None:
+    def __init__(self, figsize=(5., 3.5)) -> None:
 
         self.axes = []
         self._dpi = 96
