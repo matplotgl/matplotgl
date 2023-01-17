@@ -4,7 +4,6 @@
 from matplotlib import colors as mplc
 import numpy as np
 import pythreejs as p3
-from typing import List, Tuple
 
 
 class Points:

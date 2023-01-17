@@ -4,10 +4,6 @@
 from .toolbar import Toolbar
 from .widgets import HBar
 
-import ipywidgets as ipw
-import numpy as np
-import pythreejs as p3
-
 
 class Figure(HBar):
 

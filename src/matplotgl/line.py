@@ -4,7 +4,6 @@
 from matplotlib import colors as mplc
 import pythreejs as p3
 import numpy as np
-from typing import List, Tuple
 
 
 class Line:

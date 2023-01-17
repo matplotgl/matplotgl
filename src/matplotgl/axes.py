@@ -1,13 +1,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Matplotgl contributors (https://github.com/matplotgl)
 
-from .utils import value_to_string
-
 import ipywidgets as ipw
 import pythreejs as p3
 from matplotlib import ticker
 import numpy as np
-from typing import List, Tuple
+
+from .utils import value_to_string
 
 
 class Axes(ipw.GridBox):
@@ -192,7 +191,8 @@ class Axes(ipw.GridBox):
                 x = (tick - left) / (right - left) * self.width - 5
                 string += (f'<div style=\"position: absolute; left: {x}px; top: 4px;\">'
                            f'{value_to_string(tick, precision=precision)}</div>')
-                string += f'<div style=\"position: absolute; left: {x}px;top: -6px\">&#9589;</div>'
+                string += (f'<div style=\"position: absolute; left: {x}px;top: -6px\">'
+                           '&#9589;</div>')
         string += '</div>'
         return string
 
@@ -202,7 +202,8 @@ class Axes(ipw.GridBox):
         """
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(bottom, top)
-        string = f'<div style=\"position: relative;width: 80px;height: {self.height - 10}px;\">'
+        string = ('<div style=\"position: relative;width: 80px;height: '
+                  f'{self.height - 10}px;\">')
         precision = max(-round(np.log10(top - bottom)) + 1, 0)
         for tick in ticks:
             if bottom <= tick <= top - 0.01 * (top - bottom):
@@ -308,7 +309,8 @@ class Axes(ipw.GridBox):
                 '<div style=\"position:relative; '
                 f'width: 30px; height: {self.height}px;\">'
                 '<div style=\"position:relative; top: 50%;left: 50%; '
-                f'transform: translate(-50%, -50%) rotate(-90deg); font-size: {fontsize};'
+                'transform: translate(-50%, -50%) rotate(-90deg); '
+                f'font-size: {fontsize};'
                 f'float:left;\">{label.replace(" ", "&nbsp;")}</div></div>')
         else:
             self._ylabel.value = ''
