@@ -43,6 +43,18 @@ Example
    plot
 
 .. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   scatter
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   imshow
+
+.. toctree::
    :maxdepth: 2
    :hidden:
 
