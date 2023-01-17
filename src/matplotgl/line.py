@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Matplotgl contributors (https://github.com/matplotgl)
 
+from matplotlib import colors as mplc
 import pythreejs as p3
 from matplotlib import ticker
 import numpy as np
@@ -9,7 +10,7 @@ from typing import List, Tuple
 
 class Line:
 
-    def __init__(self, x, y, fmt='-', color='blue', ls='solid', lw=1, ms=5, zorder=0):
+    def __init__(self, x, y, fmt='-', color='C0', ls='solid', lw=1, ms=5, zorder=0):
 
         self._x = np.asarray(x)
         self._y = np.asarray(y)
@@ -23,17 +24,20 @@ class Line:
                     dtype='float32').T),
             })
 
+        self._color = mplc.to_hex(color)
         self._line = None
         self._vertices = None
         if '-' in fmt:
             if ls == 'solid':
-                self._line_material = p3.LineBasicMaterial(color=color, linewidth=lw)
+                self._line_material = p3.LineBasicMaterial(color=self._color,
+                                                           linewidth=lw)
             elif ls == 'dashed':
-                self._line_material = p3.LineDashedMaterial(color=color, linewidth=lw)
+                self._line_material = p3.LineDashedMaterial(color=self._color,
+                                                            linewidth=lw)
             self._line = p3.Line(geometry=self._geometry, material=self._line_material)
 
         if 'o' in fmt:
-            self._vertices_material = p3.PointsMaterial(color=color, size=ms)
+            self._vertices_material = p3.PointsMaterial(color=self._color, size=ms)
             self._vertices = p3.Points(geometry=self._geometry,
                                        material=self._vertices_material)
 

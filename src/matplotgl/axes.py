@@ -14,13 +14,14 @@ class Axes(ipw.GridBox):
 
     def __init__(self) -> None:
 
-        self.background_color = "#f0f0f0"
+        self.background_color = "#ffffff"
         self.xmin = 0.0
         self.xmax = 1.0
         self.ymin = 0.0
         self.ymax = 1.0
         self._fig = None
         self._artists = []
+        self._lines = []
 
         # Make background to enable box zoom
         self._background_geometry = p3.PlaneGeometry(width=2,
@@ -332,9 +333,13 @@ class Axes(ipw.GridBox):
     def get_title(self):
         return self._title._raw_string
 
-    def plot(self, *args, **kwargs):
+    def plot(self, *args, color=None, **kwargs):
         from .plot import plot as p
-        return p(self, *args, **kwargs)
+        if color is None:
+            color = f'C{len(self._lines)}'
+        line = p(self, *args, color=color, **kwargs)
+        self._lines.append(line)
+        return line
 
     def scatter(self, *args, **kwargs):
         from .scatter import scatter as s
