@@ -13,8 +13,10 @@ def value_to_string(val, precision: int = 3) -> str:
     precision:
         The number of decimal places to use for the string output.
     """
-    if (not isinstance(val, float)) or (val == 0):
+    if not isinstance(val, float):
         text = str(val)
+    elif val == 0:
+        text = "{val:.{prec}f}".format(val=val, prec=precision)
     elif (abs(val) >= 1.0e4) or (abs(val) <= 1.0e-4):
         text = "{val:.{prec}e}".format(val=val, prec=precision)
     else:

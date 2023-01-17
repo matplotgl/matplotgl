@@ -22,6 +22,7 @@ class Axes(ipw.GridBox):
         self._fig = None
         self._artists = []
         self._lines = []
+        self._collections = []
 
         # Make background to enable box zoom
         self._background_geometry = p3.PlaneGeometry(width=2,
@@ -341,9 +342,13 @@ class Axes(ipw.GridBox):
         self._lines.append(line)
         return line
 
-    def scatter(self, *args, **kwargs):
+    def scatter(self, *args, color=None, **kwargs):
         from .scatter import scatter as s
-        return s(self, *args, **kwargs)
+        if color is None:
+            color = f'C{len(self._collections)}'
+        coll = s(self, *args, color=color, **kwargs)
+        self._collections.append(coll)
+        return coll
 
     def imshow(self, *args, **kwargs):
         from .imshow import imshow as im

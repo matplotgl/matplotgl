@@ -1,19 +1,20 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Matplotgl contributors (https://github.com/matplotgl)
 
-import pythreejs as p3
-from matplotlib import ticker
+from matplotlib import colors as mplc
 import numpy as np
+import pythreejs as p3
 from typing import List, Tuple
 
 
 class Points:
 
-    def __init__(self, x, y, color='blue', s=3, zorder=0) -> None:
+    def __init__(self, x, y, color='C0', s=3, zorder=0) -> None:
 
         self._x = np.asarray(x)
         self._y = np.asarray(y)
         self._zorder = zorder
+        self._color = mplc.to_hex(color)
         self._geometry = p3.BufferGeometry(
             attributes={
                 'position':
@@ -22,7 +23,7 @@ class Points:
                      np.full_like(self._x, self._zorder - 50)],
                     dtype='float32').T),
             })
-        self._material = p3.PointsMaterial(color=color, size=s)
+        self._material = p3.PointsMaterial(color=self._color, size=s)
         self._points = p3.Points(geometry=self._geometry, material=self._material)
 
     def get_bbox(self):
