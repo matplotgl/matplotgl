@@ -9,7 +9,7 @@ from typing import List, Tuple
 
 class Line:
 
-    def __init__(self, x, y, color='blue', zorder=0) -> None:
+    def __init__(self, x, y, color='blue', zorder=0):
 
         self._x = np.asarray(x)
         self._y = np.asarray(y)

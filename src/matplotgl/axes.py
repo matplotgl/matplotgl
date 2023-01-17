@@ -23,12 +23,13 @@ class Axes(ipw.GridBox):
         self._artists = []
 
         # Make background to enable box zoom
-        self._background_geometry = p3.BoxGeometry(width=2,
-                                                   height=2,
-                                                   widthSegments=1,
-                                                   heightSegments=1)
+        self._background_geometry = p3.PlaneGeometry(width=2,
+                                                     height=2,
+                                                     widthSegments=1,
+                                                     heightSegments=1)
         self._background_material = p3.MeshBasicMaterial(color=self.background_color,
-                                                         side='DoubleSide')
+                                                         #  side='DoubleSide'
+                                                         )
         self._background_mesh = p3.Mesh(geometry=self._background_geometry,
                                         material=self._background_material,
                                         position=(0, 0, -200))
@@ -210,7 +211,7 @@ class Axes(ipw.GridBox):
         string = f'<div style=\"position: relative;width: 80px;height: {self.height - 10}px;\">'
         for tick in ticks:
             if bottom <= tick <= top - 0.01 * (top - bottom):
-                y = self.height - ((tick - bottom) / (top - bottom) * self.height) - 12
+                y = self.height - ((tick - bottom) / (top - bottom) * self.height) - 15
                 string += f'<div style=\"position: absolute; top: {y}px; right: 1px;\">{value_to_string(tick)} &#8211;</div>'
         string += '</div>'
         return string
