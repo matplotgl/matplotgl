@@ -9,7 +9,7 @@ from typing import List, Tuple
 
 class Points:
 
-    def __init__(self, x, y, color='blue', zorder=0) -> None:
+    def __init__(self, x, y, color='blue', s=3, zorder=0) -> None:
 
         self._x = np.asarray(x)
         self._y = np.asarray(y)
@@ -22,7 +22,7 @@ class Points:
                      np.full_like(self._x, self._zorder - 50)],
                     dtype='float32').T),
             })
-        self._material = p3.PointsMaterial(color=color, size=3)
+        self._material = p3.PointsMaterial(color=color, size=s)
         self._points = p3.Points(geometry=self._geometry, material=self._material)
 
     def get_bbox(self):

@@ -18,7 +18,7 @@ class Image:
         self._zorder = zorder
         self._cmap = mpl.colormaps[cmap]
         self._texture = p3.DataTexture(
-            data=self._cmap(self._array)[..., :3],
+            data=self._cmap(self._array)[..., :3].astype('float32'),
             format="RGBFormat",
             type="FloatType",
         )
