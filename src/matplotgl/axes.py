@@ -237,6 +237,9 @@ class Axes(ipw.GridBox):
         self.camera.right = self.xmax
         self.camera.bottom = self.ymin
         self.camera.top = self.ymax
+        self._update_ticks_and_layout()
+
+    def _update_ticks_and_layout(self):
         self._bottomspine.value = self._make_xticks(left=self.xmin, right=self.xmax)
         self._leftspine.value = self._make_yticks(bottom=self.ymin, top=self.ymax)
         self._update_layout()
@@ -277,12 +280,13 @@ class Axes(ipw.GridBox):
         self.layout.grid_template_rows = rows
         self.layout.grid_template_areas = areas
 
-    def set_figure(self, fig):
+    def set_figure(self, fig, width=None, height=None):
         self._fig = fig
-        self.width = self._fig.width
-        self.height = self._fig.height
+        self.width = self._fig.width if width is None else width
+        self.height = self._fig.height if height is None else height
         self.renderer.layout.height = f'{self.height}px'
         self.renderer.layout.width = f'{self.width}px'
+        self._update_ticks_and_layout()
 
     def toggle_pan(self, value):
         self.controls.enablePan = value
