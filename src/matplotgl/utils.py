@@ -15,8 +15,7 @@ def value_to_string(val, precision: int = 3) -> str:
     """
     if (not isinstance(val, float)) or (val == 0):
         text = str(val)
-    elif (abs(val) >= 10.0**(precision+1)) or \
-         (abs(val) <= 10.0**(-precision-1)):
+    elif (abs(val) >= 1.0e4) or (abs(val) <= 1.0e-4):
         text = "{val:.{prec}e}".format(val=val, prec=precision)
     else:
         text = "{}".format(val)

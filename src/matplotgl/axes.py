@@ -184,12 +184,12 @@ class Axes(ipw.GridBox):
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(left, right)
         string = '<div style=\"position: relative; height: 30px;\">'
+        precision = max(-round(np.log10(right - left)) + 1, 0)
         for tick in ticks:
             if left + 0.01 * (right - left) <= tick <= right:
                 x = (tick - left) / (right - left) * self.width - 5
-                string += (
-                    f'<div style=\"position: absolute; left: {x}px; top: 4px;\">{value_to_string(tick)}</div>'
-                )
+                string += (f'<div style=\"position: absolute; left: {x}px; top: 4px;\">'
+                           f'{value_to_string(tick, precision=precision)}</div>')
                 string += f'<div style=\"position: absolute; left: {x}px;top: -6px\">&#9589;</div>'
         string += '</div>'
         return string
@@ -201,10 +201,13 @@ class Axes(ipw.GridBox):
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(bottom, top)
         string = f'<div style=\"position: relative;width: 80px;height: {self.height - 10}px;\">'
+        precision = max(-round(np.log10(top - bottom)) + 1, 0)
         for tick in ticks:
             if bottom <= tick <= top - 0.01 * (top - bottom):
                 y = self.height - ((tick - bottom) / (top - bottom) * self.height) - 15
-                string += f'<div style=\"position: absolute; top: {y}px; right: 1px;\">{value_to_string(tick)} &#8211;</div>'
+                string += (
+                    f'<div style=\"position: absolute; top: {y}px; right: 1px;\">'
+                    f'{value_to_string(tick, precision=precision)} &#8211;</div>')
         string += '</div>'
         return string
 
