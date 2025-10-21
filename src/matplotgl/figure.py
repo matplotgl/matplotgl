@@ -6,18 +6,19 @@ from .widgets import HBar
 
 
 class Figure(HBar):
-
-    def __init__(self, figsize=(5., 3.5)) -> None:
-
+    def __init__(self, *, figsize=(5.0, 3.5), dpi=96, nrows=1, ncols=1) -> None:
         self.axes = []
-        self._dpi = 96
-        self.width = figsize[0] * self._dpi
-        self.height = figsize[1] * self._dpi
+        self._dpi = dpi
+        self._figsize = figsize
+        self._nrows = nrows
+        self._ncols = ncols
+        self.width = self._figsize[0] * self._dpi
+        self.height = self._figsize[1] * self._dpi
 
         self.toolbar = Toolbar()
         self.toolbar._home.on_click(self.home)
-        self.toolbar._zoom.observe(self.toggle_pickers, names='value')
-        self.toolbar._pan.observe(self.toggle_pan, names='value')
+        self.toolbar._zoom.observe(self.toggle_pickers, names="value")
+        self.toolbar._pan.observe(self.toggle_pan, names="value")
 
         super().__init__([self.toolbar])
 
@@ -27,13 +28,15 @@ class Figure(HBar):
 
     def toggle_pickers(self, change):
         for ax in self.axes:
-            if change['new']:
-                ax._zoom_down_picker.observe(ax.on_mouse_down, names=['point'])
-                ax._zoom_up_picker.observe(ax.on_mouse_up, names=['point'])
-                ax._zoom_move_picker.observe(ax.on_mouse_move, names=['point'])
+            if change["new"]:
+                ax._zoom_down_picker.observe(ax.on_mouse_down, names=["point"])
+                ax._zoom_up_picker.observe(ax.on_mouse_up, names=["point"])
+                ax._zoom_move_picker.observe(ax.on_mouse_move, names=["point"])
                 ax.renderer.controls = [
-                    ax.controls, ax._zoom_down_picker, ax._zoom_up_picker,
-                    ax._zoom_move_picker
+                    ax.controls,
+                    ax._zoom_down_picker,
+                    ax._zoom_up_picker,
+                    ax._zoom_move_picker,
                 ]
             else:
                 ax._zoom_down_picker.unobserve_all()
@@ -43,9 +46,23 @@ class Figure(HBar):
 
     def toggle_pan(self, change):
         for ax in self.axes:
-            ax.toggle_pan(change['new'])
+            ax.toggle_pan(change["new"])
 
     def add_axes(self, ax):
         self.axes.append(ax)
         ax.set_figure(self)
         self.add(ax)
+
+    def get_size_inches(self):
+        return self._figsize
+
+    def set_size_inches(self, w, h=None):
+        if h is None:
+            h = w[1]
+            w = w[0]
+        self._figsize = (w, h)
+        self.width = self._figsize[0] * self._dpi
+        self.height = self._figsize[1] * self._dpi
+        for ax in self.axes:
+            ax.width = self.width // self._ncols
+            ax.height = self.height // self._nrows

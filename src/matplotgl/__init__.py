@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2023 Matplotgl contributors (https://github.com/matplotgl)
 
-# flake8: noqa F401
+from matplotlib import colormaps, colors
 
-from .axes import Axes
-from .figure import Figure
-from .plot import plot
-from .imshow import imshow
-from .subplots import subplots
+from . import pyplot
+
+__all__ = [
+    "pyplot",
+    "colormaps",
+    "colors",
+]

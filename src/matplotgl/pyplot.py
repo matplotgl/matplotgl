@@ -1,14 +1,16 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright (c) 2023 Matplotgl contributors (https://github.com/matplotgl)
-
-import numpy as np
 
 import matplotlib
 from matplotlib.figure import Figure as MplFigure
 
+import numpy as np
+
 from .axes import Axes
 from .figure import Figure
+from .plot import plot
+from .imshow import imshow
 from .widgets import VBar
+
 
 matplotlib.use("Agg")  # Headless backend
 
@@ -47,3 +49,12 @@ def subplots(nrows=1, ncols=1, **kwargs):
     else:
         out = np.array(axs)
     return fig, out
+
+
+__all__ = [
+    "Axes",
+    "Figure",
+    "plot",
+    "imshow",
+    "subplots",
+]
