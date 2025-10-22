@@ -1,13 +1,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Matplotgl contributors (https://github.com/matplotgl)
 
+from contextlib import nullcontext
+from ipycanvas import Canvas, hold_canvas
 import ipywidgets as ipw
 import pythreejs as p3
-from matplotlib import ticker
 from matplotlib.axes import Axes as MplAxes
 import numpy as np
-
-from .utils import value_to_string
 
 
 class Axes(ipw.GridBox):
@@ -36,6 +35,11 @@ class Axes(ipw.GridBox):
             material=self._background_material,
             position=(0, 0, -200),
         )
+
+        self._mouse_cursor_picker = p3.Picker(
+            controlling=self._background_mesh, event="mousemove"
+        )
+        self._mouse_cursor_picker.observe(self._update_cursor_position, names=["point"])
 
         self._zoom_down_picker = p3.Picker(
             controlling=self._background_mesh, event="mousedown"
@@ -71,13 +75,14 @@ class Axes(ipw.GridBox):
         self.renderer = p3.Renderer(
             camera=self.camera,
             scene=self.scene,
-            controls=[self.controls],
+            controls=[self.controls, self._mouse_cursor_picker],
             width=200,
             height=200,
             layout={
-                "border": "solid 1px",
+                # "border": "solid 1px",
                 "grid_area": "renderer",
-                "padding": "0px 0px 0px 0px",
+                "padding": "0",
+                "margin": "0",
             },
         )
 
@@ -88,50 +93,83 @@ class Axes(ipw.GridBox):
         self._zoom_ymin = None
         self._zoom_ymax = None
 
-        self._leftspine = ipw.HTML(
-            # self._make_yticks(),
-            # '<div style="height: 100%; background-color: cyan;"></div>',
-            layout={"grid_area": "leftspine", "padding": "0px 0px 0px 0px"},
-        )
-        self._rightspine = ipw.HTML(
-            layout={"grid_area": "rightspine", "padding": "0px 0px 0px 0px"}
-        )
-        self._bottomspine = ipw.HTML(
-            self._make_xticks(),
-            layout={"grid_area": "bottomspine", "padding": "0px 0px 0px 0px"},
-        )
-        self._topspine = ipw.HTML(
-            layout={"grid_area": "topspine", "padding": "0px 0px 0px 0px"}
-        )
-        # self._title = ipw.HTML(layout={"grid_area": "title"})
-        # self._xlabel = ipw.HTML(layout={"grid_area": "xlabel"})
-        # self._ylabel = ipw.HTML(layout={"grid_area": "ylabel"})
+        params = {
+            "xlabel": {"width": self.width, "height": 50},
+            "ylabel": {"width": 50, "height": self.height},
+            "title": {"width": self.width, "height": 50},
+            "leftspine": {"width": 50, "height": self.height + 50},
+            "rightspine": {"width": 50, "height": self.height},
+            "bottomspine": {"width": self.width + 50, "height": 50},
+            "topspine": {"width": self.width + 50, "height": 50},
+        }
+
+        self._canvases = {
+            name: Canvas(
+                width=param["width"],
+                height=param["height"],
+                layout={
+                    "grid_area": name,
+                    "padding": "0",
+                    "margin": "0",
+                },
+            )
+            for name, param in params.items()
+        }
+
+        # font_size = 12
+        # for canvas in self._canvases.values():
+        #     canvas.font = f"{font_size}px sans-serif"
+        #     canvas.fill_style = "black"
+        #     canvas.text_align = "center"
+
+        # self._canvases["xlabel"].text_baseline = "top"
+        # self._canvases["ylabel"].text_baseline = "middle"
+        # self._canvases["title"].text_baseline = "bottom"
+        # self._canvases["leftspine"].text_align = "right"
+        # self._canvases["leftspine"].text_baseline = "middle"
+        # self._canvases["rightspine"].text_align = "left"
+        # self._canvases["rightspine"].text_baseline = "middle"
+        # self._canvases["topspine"].text_align = "center"
+        # self._canvases["topspine"].text_baseline = "bottom"
+        # self._canvases["bottomspine"].text_align = "center"
+        # self._canvases["bottomspine"].text_baseline = "bottom"
 
         if figure is not None:
             self.set_figure(figure)
 
         super().__init__(
             children=[
-                # self._xlabel,
-                # self._ylabel,
-                # self._title,
-                self._leftspine,
-                self._rightspine,
-                self._bottomspine,
-                self._topspine,
+                *self._canvases.values(),
                 self.renderer,
             ],
             layout=ipw.Layout(
-                grid_template_columns=f"80px {self.width}px 50px",
-                grid_template_rows=f"35px {self.height}px 35px",
+                grid_template_columns="auto" * 4,
+                grid_template_rows="auto" * 5,
                 grid_template_areas="""
-            ". topspine topspine"
-            "leftspine renderer rightspine"
-            "leftspine bottomspine bottomspine"
+            ". . title ."
+            ". . topspine topspine"
+            "ylabel leftspine renderer rightspine"
+            ". leftspine bottomspine bottomspine"
+            ". . xlabel ."
             """,
-                padding="0px 0px 0px 0px",
+                padding="0",
+                grid_gap="0px 0px",
+                margin="0",
             ),
         )
+
+    def _update_cursor_position(self, change):
+        # Add text at the bottom right corner of the topspine canvas
+        x, y, z = change["new"]
+        canvas = self._canvases["topspine"]
+        with hold_canvas():
+            canvas.clear()
+            canvas.text_align = "right"
+            canvas.fill_text(f"({x:.2f}, {y:.2f})", self.width - 10, canvas.height - 10)
+            canvas.begin_path()
+            canvas.move_to(0, canvas.height)
+            canvas.line_to(self.width, canvas.height)
+            canvas.stroke()
 
     def on_mouse_down(self, change):
         self._zoom_mouse_down = True
@@ -158,6 +196,7 @@ class Axes(ipw.GridBox):
                 self._zoom_mouse_moved = False
 
     def on_mouse_move(self, change):
+        # print("MOUSE MOVE", change)
         if self._zoom_mouse_down:
             self._zoom_mouse_moved = True
             x, y, z = change["new"]
@@ -173,6 +212,10 @@ class Axes(ipw.GridBox):
     @width.setter
     def width(self, w):
         self.renderer.width = w
+        self._canvases["xlabel"].width = w
+        self._canvases["title"].width = w
+        self._canvases["bottomspine"].width = w + self._canvases["rightspine"].width
+        self._canvases["topspine"].width = w + self._canvases["rightspine"].width
 
     @property
     def height(self):
@@ -181,6 +224,9 @@ class Axes(ipw.GridBox):
     @height.setter
     def height(self, h):
         self.renderer.height = h
+        self._canvases["ylabel"].height = h
+        self._canvases["leftspine"].height = h + self._canvases["bottomspine"].height
+        self._canvases["rightspine"].height = h
 
     def autoscale(self):
         xmin = np.inf
@@ -218,30 +264,87 @@ class Axes(ipw.GridBox):
     def get_figure(self):
         return self._fig
 
-    def _make_xticks(self) -> str:
+    def _make_xticks(self, hold=True):
         """
         Create tick labels on outline edges
         """
-        string = '<div style="position: relative; height: 2em; background-color: red;">'
+        # string = (
+        #     '<div style="position: relative; height: 2em; background-color: red;">'
+        #     '<svg height="2em" width="100%"><line x1="0" y1="0" x2="100%" y2="0" '
+        #     'style="stroke:black;stroke-width:1" />'
+        # )
+        tick_length = 6
+        label_offset = 3
+
         # (xmin, xmax), (ymin, ymax) = self._ax.get_xlim(), self._ax.get_ylim()
         xmin, xmax = self.camera.left, self.camera.right
         print("MAKE X TICKS", xmin, xmax)
         xticks = self.get_xticks()
         xlabels = [lab.get_text() for lab in self.get_xticklabels()]
-        for tick, label in zip(xticks, xlabels, strict=True):
-            if tick < xmin or tick > xmax:
-                continue
-            # x, y = self._ax.transData.transform((tick, ymin))
-            x = (tick - xmin) / (xmax - xmin) * self.width
-            string += (
-                f'<div style="position: absolute; top: 0px; left: {x}px; '
-                'display: inline-block; padding-top: 2px;">'
-                '<div style="position: absolute; top: 0; left: 50%; '
-                "transform: translateX(-50%); width: 1px; height: 7px; "
-                'background-color: black;"></div>'
-                f"{label.replace(' ', '&nbsp;')}</div>"
-            )
-        string += "</div>"
+
+        # print("textalign", self._canvases["bottomspine"].text_align)
+
+        bottom = self._canvases["bottomspine"]
+        top = self._canvases["topspine"]
+
+        ctx = hold_canvas if hold else nullcontext
+
+        with ctx():
+            for canvas in (bottom, top):
+                canvas.clear()
+                # Re-set canvas properties after clear() resets them
+                canvas.text_align = "center"
+                canvas.fill_style = "black"
+
+            bottom.text_baseline = "top"
+            # top.text_baseline = "bottom"
+
+            bottom.begin_path()
+            bottom.move_to(0, 0)
+            bottom.line_to(self.width, 0)
+            bottom.stroke()
+
+            top.begin_path()
+            top.move_to(0, top.height)
+            top.line_to(self.width, top.height)
+            top.stroke()
+
+            for tick, label in zip(xticks, xlabels, strict=True):
+                if tick < xmin or tick > xmax:
+                    continue
+                # x, y = self._ax.transData.transform((tick, ymin))
+                x = (tick - xmin) / (xmax - xmin) * self.width
+                # Use SVG for better text rendering
+                bottom.begin_path()
+                bottom.move_to(x, 0)
+                bottom.line_to(x, 0 + tick_length)
+                bottom.stroke()
+                # Label
+                bottom.fill_text(label, x, 0 + tick_length + label_offset)
+
+                # top.begin_path()
+                # top.move_to(x, top.height)
+                # top.line_to(x, top.height - tick_length)
+                # top.stroke()
+
+                # string += (
+                #     f'<line x1="{x}" y1="0" x2="{x}" y2="7" '
+                #     'style="stroke:black;stroke-width:1" />'
+                # )
+                # string += (
+                #     f'<text x="{x}" y="9" text-anchor="middle" dominant-baseline="hanging">'
+                #     f"{label}</text>"
+                # )
+
+            # string += (
+            #     f'<div style="position: absolute; top: 0px; left: {x}px; '
+            #     'display: inline-block; padding-top: 2px;">'
+            #     '<div style="position: absolute; top: 0; left: 50%; '
+            #     "transform: translateX(-50%); width: 1px; height: 7px; "
+            #     'background-color: black;"></div>'
+            #     f"{label.replace(' ', '&nbsp;')}</div>"
+            # )
+        # string += "</svg></div>"
 
         # ticker_ = ticker.AutoLocator()
         # ticks = ticker_.tick_values(left, right)
@@ -259,29 +362,57 @@ class Axes(ipw.GridBox):
         #             "&#9589;</div>"
         #         )
         # string += "</div>"
-        return string
+        # return string
 
-    def _make_yticks(self) -> str:
+    def _make_yticks(self, hold=True):
         """
         Create tick labels on outline edges
         """
-        return '<div style="height: 100%; background-color: cyan;"></div>'
-        ticker_ = ticker.AutoLocator()
-        ticks = ticker_.tick_values(bottom, top)
-        string = (
-            '<div style="position: relative;width: 80px;height: '
-            f'{self.height - 10}px;">'
-        )
-        precision = max(-round(np.log10(top - bottom)) + 1, 0)
-        for tick in ticks:
-            if bottom <= tick <= top - 0.01 * (top - bottom):
-                y = self.height - ((tick - bottom) / (top - bottom) * self.height) - 15
-                string += (
-                    f'<div style="position: absolute; top: {y}px; right: 1px;">'
-                    f"{value_to_string(tick, precision=precision)} &#8211;</div>"
-                )
-        string += "</div>"
-        return string
+        tick_length = 6
+        label_offset = 3
+
+        # (xmin, xmax), (ymin, ymax) = self._ax.get_xlim(), self._ax.get_ylim()
+        ymin, ymax = self.camera.bottom, self.camera.top
+        yticks = self.get_yticks()
+        ylabels = [lab.get_text() for lab in self.get_yticklabels()]
+
+        left = self._canvases["leftspine"]
+        right = self._canvases["rightspine"]
+
+        ctx = hold_canvas if hold else nullcontext
+
+        with ctx():
+            for canvas in (left, right):
+                canvas.clear()
+                # Re-set canvas properties after clear() resets them
+                canvas.text_baseline = "middle"
+                canvas.fill_style = "black"
+
+            left.text_align = "right"
+            right.text_align = "left"
+
+            left.begin_path()
+            left.move_to(left.width, 0)
+            left.line_to(left.width, self.height)
+            left.stroke()
+
+            right.begin_path()
+            right.move_to(0, 0)
+            right.line_to(0, self.height)
+            right.stroke()
+
+            for tick, label in zip(yticks, ylabels, strict=True):
+                if tick < ymin or tick > ymax:
+                    continue
+                # x, y = self._ax.transData.transform((xmin, tick))
+                y = (tick - ymin) / (ymax - ymin) * self.height
+                # Use SVG for better text rendering
+                left.begin_path()
+                left.move_to(left.width, y)
+                left.line_to(left.width - tick_length, y)
+                left.stroke()
+                # Label
+                left.fill_text(label, left.width - tick_length - label_offset, y)
 
     def get_xlim(self):
         return self._xmin, self._xmax
@@ -336,10 +467,10 @@ class Axes(ipw.GridBox):
             xlim=(self._zoom_xmin, self._zoom_xmax),
             ylim=(self._zoom_ymin, self._zoom_ymax),
         )
-        self._bottomspine.value = self._make_xticks(
+        self._make_xticks(
             # left=self._zoom_xmin, right=self._zoom_xmax
         )
-        self._leftspine.value = self._make_yticks(
+        self._make_yticks(
             # bottom=self._zoom_ymin, top=self._zoom_ymax
         )
 
@@ -356,10 +487,10 @@ class Axes(ipw.GridBox):
         self._update_ticks_and_layout()
 
     def _update_ticks_and_layout(self):
-        self._bottomspine.value = self._make_xticks(
+        self._make_xticks(
             # left=self.camera.left, right=self.camera.right
         )
-        self._leftspine.value = self._make_yticks(
+        self._make_yticks(
             # bottom=self.camera.bottom, top=self.camera.top
         )
         # self._update_layout()
