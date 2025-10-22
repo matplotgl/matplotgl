@@ -2,7 +2,6 @@
 # Copyright (c) 2023 Matplotgl contributors (https://github.com/matplotgl)
 
 import ipywidgets as ipw
-from ipycanvas import Canvas
 import pythreejs as p3
 from matplotlib import ticker
 from matplotlib.axes import Axes as MplAxes
@@ -19,7 +18,7 @@ class Axes(ipw.GridBox):
         self._ymin = 0.0
         self._ymax = 1.0
         self._fig = None
-        self._mplaxes = ax
+        self._ax = ax
         self._artists = []
         self._lines = []
         self._collections = []
@@ -75,7 +74,11 @@ class Axes(ipw.GridBox):
             controls=[self.controls],
             width=200,
             height=200,
-            layout={"border": "solid 1px", "grid_area": "renderer"},
+            layout={
+                "border": "solid 1px",
+                "grid_area": "renderer",
+                "padding": "0px 0px 0px 0px",
+            },
         )
 
         self._zoom_mouse_down = False
@@ -85,17 +88,22 @@ class Axes(ipw.GridBox):
         self._zoom_ymin = None
         self._zoom_ymax = None
 
-        self._leftspine = Canvas(
-            # self._make_yticks(bottom=self.ymin, top=self.ymax),
-            layout={"grid_area": "leftspine"},
+        self._leftspine = ipw.HTML(
+            # self._make_yticks(),
+            # '<div style="height: 100%; background-color: cyan;"></div>',
+            layout={"grid_area": "leftspine", "padding": "0px 0px 0px 0px"},
         )
-        self._rightspine = Canvas(layout={"grid_area": "rightspine"})
-        self._bottomspine = Canvas(
-            # self._make_xticks(left=self.xmin, right=self.xmax),
-            layout={"grid_area": "bottomspine"},
+        self._rightspine = ipw.HTML(
+            layout={"grid_area": "rightspine", "padding": "0px 0px 0px 0px"}
         )
-        self._topspine = Canvas(layout={"grid_area": "topspine"})
-        # self._title = Canvas(layout={"grid_area": "title"})
+        self._bottomspine = ipw.HTML(
+            self._make_xticks(),
+            layout={"grid_area": "bottomspine", "padding": "0px 0px 0px 0px"},
+        )
+        self._topspine = ipw.HTML(
+            layout={"grid_area": "topspine", "padding": "0px 0px 0px 0px"}
+        )
+        # self._title = ipw.HTML(layout={"grid_area": "title"})
         # self._xlabel = ipw.HTML(layout={"grid_area": "xlabel"})
         # self._ylabel = ipw.HTML(layout={"grid_area": "ylabel"})
 
@@ -121,6 +129,7 @@ class Axes(ipw.GridBox):
             "leftspine renderer rightspine"
             "leftspine bottomspine bottomspine"
             """,
+                padding="0px 0px 0px 0px",
             ),
         )
 
@@ -175,9 +184,9 @@ class Axes(ipw.GridBox):
 
     def autoscale(self):
         xmin = np.inf
-        xmax = np.NINF
+        xmax = -np.inf
         ymin = np.inf
-        ymax = np.NINF
+        ymax = -np.inf
         for artist in self._artists:
             lims = artist.get_bbox()
             xmin = min(lims["left"], xmin)
@@ -209,32 +218,54 @@ class Axes(ipw.GridBox):
     def get_figure(self):
         return self._fig
 
-    def _make_xticks(self, left, right) -> str:
+    def _make_xticks(self) -> str:
         """
         Create tick labels on outline edges
         """
-        ticker_ = ticker.AutoLocator()
-        ticks = ticker_.tick_values(left, right)
-        string = '<div style="position: relative; height: 30px;">'
-        precision = max(-round(np.log10(right - left)) + 1, 0)
-        for tick in ticks:
-            if left + 0.01 * (right - left) <= tick <= right:
-                x = (tick - left) / (right - left) * self.width - 5
-                string += (
-                    f'<div style="position: absolute; left: {x}px; top: 4px;">'
-                    f"{value_to_string(tick, precision=precision)}</div>"
-                )
-                string += (
-                    f'<div style="position: absolute; left: {x}px;top: -6px">'
-                    "&#9589;</div>"
-                )
+        string = '<div style="position: relative; height: 2em; background-color: red;">'
+        # (xmin, xmax), (ymin, ymax) = self._ax.get_xlim(), self._ax.get_ylim()
+        xmin, xmax = self.camera.left, self.camera.right
+        print("MAKE X TICKS", xmin, xmax)
+        xticks = self.get_xticks()
+        xlabels = [lab.get_text() for lab in self.get_xticklabels()]
+        for tick, label in zip(xticks, xlabels, strict=True):
+            if tick < xmin or tick > xmax:
+                continue
+            # x, y = self._ax.transData.transform((tick, ymin))
+            x = (tick - xmin) / (xmax - xmin) * self.width
+            string += (
+                f'<div style="position: absolute; top: 0px; left: {x}px; '
+                'display: inline-block; padding-top: 2px;">'
+                '<div style="position: absolute; top: 0; left: 50%; '
+                "transform: translateX(-50%); width: 1px; height: 7px; "
+                'background-color: black;"></div>'
+                f"{label.replace(' ', '&nbsp;')}</div>"
+            )
         string += "</div>"
+
+        # ticker_ = ticker.AutoLocator()
+        # ticks = ticker_.tick_values(left, right)
+        # string = '<div style="position: relative; height: 30px;">'
+        # precision = max(-round(np.log10(right - left)) + 1, 0)
+        # for tick in ticks:
+        #     if left + 0.01 * (right - left) <= tick <= right:
+        #         x = (tick - left) / (right - left) * self.width - 5
+        #         string += (
+        #             f'<div style="position: absolute; left: {x}px; top: 4px;">'
+        #             f"{value_to_string(tick, precision=precision)}</div>"
+        #         )
+        #         string += (
+        #             f'<div style="position: absolute; left: {x}px;top: -6px">'
+        #             "&#9589;</div>"
+        #         )
+        # string += "</div>"
         return string
 
-    def _make_yticks(self, bottom, top) -> str:
+    def _make_yticks(self) -> str:
         """
         Create tick labels on outline edges
         """
+        return '<div style="height: 100%; background-color: cyan;"></div>'
         ticker_ = ticker.AutoLocator()
         ticks = ticker_.tick_values(bottom, top)
         string = (
@@ -253,7 +284,7 @@ class Axes(ipw.GridBox):
         return string
 
     def get_xlim(self):
-        return (self._xmin, self._xmax)
+        return self._xmin, self._xmax
 
     def set_xlim(self, left, right=None):
         self._ax.set_xlim(left, right)
@@ -262,12 +293,12 @@ class Axes(ipw.GridBox):
             left = left[0]
         self._xmin = left
         self._xmax = right
-        self.camera.left = self._xmin
-        self.camera.right = self._xmax
+        self.camera.left = left
+        self.camera.right = right
         self._update_ticks_and_layout()
 
     def get_ylim(self):
-        return (self._ymin, self._ymax)
+        return self._ymin, self._ymax
 
     def set_ylim(self, bottom, top=None):
         self._ax.set_ylim(bottom, top)
@@ -276,9 +307,21 @@ class Axes(ipw.GridBox):
             bottom = bottom[0]
         self._ymin = bottom
         self._ymax = top
-        self.camera.bottom = self._ymin
-        self.camera.top = self._ymax
+        self.camera.bottom = bottom
+        self.camera.top = top
         self._update_ticks_and_layout()
+
+    def get_xticks(self):
+        return self._ax.get_xticks()
+
+    def get_xticklabels(self):
+        return self._ax.get_xticklabels()
+
+    def get_yticks(self):
+        return self._ax.get_yticks()
+
+    def get_yticklabels(self):
+        return self._ax.get_yticklabels()
 
     def zoom(self, box):
         self._zoom_xmin = box[0]
@@ -289,27 +332,36 @@ class Axes(ipw.GridBox):
         self.camera.right = self._zoom_xmax
         self.camera.bottom = self._zoom_ymin
         self.camera.top = self._zoom_ymax
+        self._ax.set(
+            xlim=(self._zoom_xmin, self._zoom_xmax),
+            ylim=(self._zoom_ymin, self._zoom_ymax),
+        )
         self._bottomspine.value = self._make_xticks(
-            left=self._zoom_xmin, right=self._zoom_xmax
+            # left=self._zoom_xmin, right=self._zoom_xmax
         )
         self._leftspine.value = self._make_yticks(
-            bottom=self._zoom_ymin, top=self._zoom_ymax
+            # bottom=self._zoom_ymin, top=self._zoom_ymax
         )
 
-    def _apply_zoom(self):
-        for artist in self._artists:
-            artist._apply_transform()
+    # def _apply_zoom(self):
+    #     for artist in self._artists:
+    #         artist._apply_transform()
 
     def reset(self):
-        self.camera.left = self.xmin
-        self.camera.right = self.xmax
-        self.camera.bottom = self.ymin
-        self.camera.top = self.ymax
+        self.camera.left = self._xmin
+        self.camera.right = self._xmax
+        self.camera.bottom = self._ymin
+        self.camera.top = self._ymax
+        self._ax.set(xlim=(self._xmin, self._xmax), ylim=(self._ymin, self._ymax))
         self._update_ticks_and_layout()
 
     def _update_ticks_and_layout(self):
-        self._bottomspine.value = self._make_xticks(left=self.xmin, right=self.xmax)
-        self._leftspine.value = self._make_yticks(bottom=self.ymin, top=self.ymax)
+        self._bottomspine.value = self._make_xticks(
+            # left=self.camera.left, right=self.camera.right
+        )
+        self._leftspine.value = self._make_yticks(
+            # bottom=self.camera.bottom, top=self.camera.top
+        )
         # self._update_layout()
 
     def _update_layout(self):
@@ -431,6 +483,7 @@ class Axes(ipw.GridBox):
             color = f"C{len(self._lines)}"
         line = p(self, *args, color=color, **kwargs)
         self._lines.append(line)
+        self.autoscale()
         return line
 
     def scatter(self, *args, color=None, **kwargs):
@@ -440,9 +493,13 @@ class Axes(ipw.GridBox):
             color = f"C{len(self._collections)}"
         coll = s(self, *args, color=color, **kwargs)
         self._collections.append(coll)
+        self.autoscale()
         return coll
 
     def imshow(self, *args, **kwargs):
-        from .imshow import imshow as im
+        from .imshow import imshow as imsh
 
-        return im(self, *args, **kwargs)
+        image = imsh(self, *args, **kwargs)
+        self.images.append(image)
+        self.autoscale()
+        return image
