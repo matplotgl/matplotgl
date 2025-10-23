@@ -40,7 +40,7 @@ class Axes(ipw.GridBox):
         self._background_mesh = p3.Mesh(
             geometry=self._background_geometry,
             material=self._background_material,
-            position=(0, 0, -200),
+            position=(0, 0, -100),
         )
 
         self._mouse_cursor_picker = p3.Picker(
@@ -67,8 +67,14 @@ class Axes(ipw.GridBox):
         )
         self._zoom_rect_line = p3.Line(
             geometry=self._zoom_rect_geometry,
-            material=p3.LineBasicMaterial(color="black", linewidth=1),
-            visible=False,
+            material=p3.LineBasicMaterial(
+                color="black",
+                linewidth=1,
+                # depthTest=False,
+                # depthWrite=False,
+                visible=False,
+                # renderOrder=999,
+            ),
         )
 
         self.camera = p3.OrthographicCamera(
