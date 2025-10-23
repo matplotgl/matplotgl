@@ -9,6 +9,11 @@ from matplotlib.axes import Axes as MplAxes
 import numpy as np
 
 
+from .line import Line
+from .points import Points
+from .image import Image
+
+
 class Axes(ipw.GridBox):
     def __init__(self, *, ax: MplAxes, figure=None) -> None:
         self.background_color = "#ffffff"
@@ -19,8 +24,8 @@ class Axes(ipw.GridBox):
         self._fig = None
         self._ax = ax
         self._artists = []
-        self._lines = []
-        self._collections = []
+        self.lines = []
+        self.collections = []
 
         # Make background to enable box zoom
         self._background_geometry = p3.PlaneGeometry(
@@ -84,6 +89,7 @@ class Axes(ipw.GridBox):
                 "padding": "0",
                 "margin": "0",
             },
+            antialias=True,
         )
 
         self._zoom_mouse_down = False
@@ -276,11 +282,20 @@ class Axes(ipw.GridBox):
         tick_length = 6
         label_offset = 3
 
-        # (xmin, xmax), (ymin, ymax) = self._ax.get_xlim(), self._ax.get_ylim()
-        xmin, xmax = self.camera.left, self.camera.right
-        print("MAKE X TICKS", xmin, xmax)
+        # # (xmin, xmax), (ymin, ymax) = self._ax.get_xlim(), self._ax.get_ylim()
+        # xmin, xmax = self.camera.left, self.camera.right
+
+        # xt = ax.get_xticks()
+
         xticks = self.get_xticks()
         xlabels = [lab.get_text() for lab in self.get_xticklabels()]
+
+        xy = np.vstack((xticks, np.zeros_like(xticks))).T
+        xticks_axes = self._ax.transAxes.inverted().transform(
+            self._ax.transData.transform(xy)
+        )[:, 0]
+
+        print("MAKE X TICKS", xticks.min(), xticks.max())
 
         # print("textalign", self._canvases["bottomspine"].text_align)
 
@@ -309,11 +324,12 @@ class Axes(ipw.GridBox):
             top.line_to(self.width, top.height)
             top.stroke()
 
-            for tick, label in zip(xticks, xlabels, strict=True):
-                if tick < xmin or tick > xmax:
+            for tick, label in zip(xticks_axes, xlabels, strict=True):
+                if tick < 0 or tick > 1.0:
                     continue
                 # x, y = self._ax.transData.transform((tick, ymin))
-                x = (tick - xmin) / (xmax - xmin) * self.width
+                # x = (tick - xmin) / (xmax - xmin) * self.width
+                x = tick * self.width
                 # Use SVG for better text rendering
                 bottom.begin_path()
                 bottom.move_to(x, 0)
@@ -372,9 +388,14 @@ class Axes(ipw.GridBox):
         label_offset = 3
 
         # (xmin, xmax), (ymin, ymax) = self._ax.get_xlim(), self._ax.get_ylim()
-        ymin, ymax = self.camera.bottom, self.camera.top
+        # ymin, ymax = self.camera.bottom, self.camera.top
         yticks = self.get_yticks()
         ylabels = [lab.get_text() for lab in self.get_yticklabels()]
+
+        xy = np.vstack((np.zeros_like(yticks), yticks)).T
+        yticks_axes = self._ax.transAxes.inverted().transform(
+            self._ax.transData.transform(xy)
+        )[:, 1]
 
         left = self._canvases["leftspine"]
         right = self._canvases["rightspine"]
@@ -401,11 +422,11 @@ class Axes(ipw.GridBox):
             right.line_to(0, self.height)
             right.stroke()
 
-            for tick, label in zip(yticks, ylabels, strict=True):
-                if tick < ymin or tick > ymax:
+            for tick, label in zip(yticks_axes, ylabels, strict=True):
+                if tick < 0 or tick > 1.0:
                     continue
                 # x, y = self._ax.transData.transform((xmin, tick))
-                y = (tick - ymin) / (ymax - ymin) * self.height
+                y = self.height - (tick * self.height)
                 # Use SVG for better text rendering
                 left.begin_path()
                 left.move_to(left.width, y)
@@ -608,29 +629,26 @@ class Axes(ipw.GridBox):
         return self._title._raw_string
 
     def plot(self, *args, color=None, **kwargs):
-        from .plot import plot as p
-
         if color is None:
-            color = f"C{len(self._lines)}"
-        line = p(self, *args, color=color, **kwargs)
-        self._lines.append(line)
+            color = f"C{len(self.lines)}"
+        line = Line(*args, color=color, **kwargs)
+        self.lines.append(line)
+        self.add_artist(line)
         self.autoscale()
         return line
 
     def scatter(self, *args, color=None, **kwargs):
-        from .scatter import scatter as s
-
         if color is None:
-            color = f"C{len(self._collections)}"
-        coll = s(self, *args, color=color, **kwargs)
-        self._collections.append(coll)
+            color = f"C{len(self.collections)}"
+        coll = Points(*args, color=color, **kwargs)
+        self.collections.append(coll)
+        self.add_artist(coll)
         self.autoscale()
         return coll
 
     def imshow(self, *args, **kwargs):
-        from .imshow import imshow as imsh
-
-        image = imsh(self, *args, **kwargs)
+        image = Image(self, *args, **kwargs)
         self.images.append(image)
+        self.add_artist(image)
         self.autoscale()
         return image

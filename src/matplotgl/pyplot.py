@@ -7,8 +7,6 @@ import numpy as np
 
 from .axes import Axes
 from .figure import Figure
-from .plot import plot
-from .imshow import imshow
 from .widgets import VBar
 
 
@@ -54,7 +52,5 @@ def subplots(nrows=1, ncols=1, **kwargs):
 __all__ = [
     "Axes",
     "Figure",
-    "plot",
-    "imshow",
     "subplots",
 ]
