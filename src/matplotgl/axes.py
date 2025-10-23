@@ -58,9 +58,11 @@ class Axes(ipw.GridBox):
             controlling=self._background_mesh, event="mousemove"
         )
 
+        rect_pos = np.zeros((5, 3), dtype="float32")
+        rect_pos[:, 2] = 99
         self._zoom_rect_geometry = p3.BufferGeometry(
             attributes={
-                "position": p3.BufferAttribute(array=np.zeros((5, 3), dtype="float32")),
+                "position": p3.BufferAttribute(array=rect_pos),
             }
         )
         self._zoom_rect_line = p3.Line(
@@ -69,15 +71,22 @@ class Axes(ipw.GridBox):
             visible=False,
         )
 
-        self.camera = p3.OrthographicCamera(-0.001, 1.0, 1.0, -0.001, -1, 300)
+        self.camera = p3.OrthographicCamera(
+            -0.001, 1.0, 1.0, -0.001, -1, 300, position=[0, 0, 100]
+        )
+        # self.camera.add(self._zoom_rect_line)
 
         self.scene = p3.Scene(
             children=[self.camera, self._background_mesh, self._zoom_rect_line],
+            # children=[self.camera, self._background_mesh],
             background=self.background_color,
         )
 
         self.controls = p3.OrbitControls(
-            controlling=self.camera, enableZoom=False, enablePan=False
+            controlling=self.camera,
+            enableZoom=False,
+            enablePan=False,
+            enableRotate=False,
         )
         self.renderer = p3.Renderer(
             camera=self.camera,
@@ -194,8 +203,9 @@ class Axes(ipw.GridBox):
     def on_mouse_down(self, change):
         self._zoom_mouse_down = True
         x, y, z = change["new"]
-        self._zoom_rect_line.geometry.attributes["position"].array = np.array(
-            [[x, x, x, x, x], [y, y, y, y, y], [0, 0, 0, 0, 0]], dtype="float32"
+        pos = self._zoom_rect_line.geometry.attributes["position"]
+        pos.array = np.array(
+            [[x, x, x, x, x], [y, y, y, y, y], pos.array[:, 2]], dtype="float32"
         ).T
         self._zoom_rect_line.visible = True
 
@@ -264,7 +274,7 @@ class Axes(ipw.GridBox):
         self._ymin = ymin
         self._ymax = ymax
 
-        print("after autoscale", xmin, xmax, ymin, ymax)
+        # print("after autoscale", xmin, xmax, ymin, ymax)
 
         self._background_mesh.geometry = p3.BoxGeometry(
             width=2 * (self._xmax - self._xmin),
@@ -352,10 +362,10 @@ class Axes(ipw.GridBox):
         #     top.move_to(0, top.height)
         #     top.line_to(self.width, top.height)
         #     top.stroke()
-        print("================")
+        # print("================")
 
         for tick, label in zip(xticks_axes, xlabels, strict=True):
-            print(tick, label, latex_to_html(label))
+            # print(tick, label, latex_to_html(label))
             if tick < 0 or tick > 1.0:
                 continue
             # x, y = self._ax.transData.transform((tick, ymin))
@@ -406,7 +416,7 @@ class Axes(ipw.GridBox):
             #     f"{label.replace(' ', '&nbsp;')}</div>"
             # )
         bottom_string += "</svg></div>"
-        print("BOTTOM STRING", bottom_string)
+        # print("BOTTOM STRING", bottom_string)
         self._margins["bottomspine"].value = bottom_string
 
         # ticker_ = ticker.AutoLocator()
@@ -518,8 +528,8 @@ class Axes(ipw.GridBox):
         self._make_yticks()
 
     def get_xticks(self):
-        print(self._xmin, self._xmax)
-        print(self._ax.get_xlim())
+        # print(self._xmin, self._xmax)
+        # print(self._ax.get_xlim())
         return self._ax.get_xticks()
 
     def get_xticklabels(self):
