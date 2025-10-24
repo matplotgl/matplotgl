@@ -1,8 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Matplotgl contributors (https://github.com/matplotgl)
 
-# from contextlib import nullcontext
-# from ipycanvas import hold_canvas
 import ipywidgets as ipw
 import pythreejs as p3
 from matplotlib.axes import Axes as MplAxes
@@ -33,10 +31,7 @@ class Axes(ipw.GridBox):
         self._background_geometry = p3.PlaneGeometry(
             width=2, height=2, widthSegments=1, heightSegments=1
         )
-        self._background_material = p3.MeshBasicMaterial(
-            color=self.background_color,
-            #  side='DoubleSide'
-        )
+        self._background_material = p3.MeshBasicMaterial(color=self.background_color)
         self._background_mesh = p3.Mesh(
             geometry=self._background_geometry,
             material=self._background_material,
@@ -65,8 +60,6 @@ class Axes(ipw.GridBox):
             geometry=self._zoom_rect_geometry,
             material=p3.LineMaterial(color="black", linewidth=1.5),
             visible=False,
-            # depthTest=False,
-            # renderOrder=1000,
         )
 
         self.camera = p3.OrthographicCamera(
@@ -75,8 +68,6 @@ class Axes(ipw.GridBox):
 
         self.scene = p3.Scene(
             children=[self.camera, self._background_mesh, self._zoom_rect_line],
-            # children=[self.camera, self._zoom_rect_line],
-            # children=[self.camera],
             background=self.background_color,
         )
 
@@ -92,12 +83,7 @@ class Axes(ipw.GridBox):
             controls=[self.controls, self._mouse_cursor_picker],
             width=200,
             height=200,
-            layout={
-                # "border": "solid 1px",
-                "grid_area": "renderer",
-                "padding": "0",
-                "margin": "0",
-            },
+            layout={"grid_area": "renderer", "padding": "0", "margin": "0"},
             antialias=True,
         )
 
@@ -111,20 +97,8 @@ class Axes(ipw.GridBox):
         self._margin_with_ticks = 50
         self._thin_margin = 5
 
-        # params = {
-        #     "xlabel": {"width": self.width, "height": 50},
-        #     "ylabel": {"width": 50, "height": self.height},
-        #     "title": {"width": self.width, "height": 50},
-        #     "leftspine": {"width": 50, "height": self.height + 50},
-        #     "rightspine": {"width": 50, "height": self.height},
-        #     "bottomspine": {"width": self.width + 50, "height": 50},
-        #     "topspine": {"width": self.width + 50, "height": 50},
-        # }
-
         self._margins = {
             name: ClickableHTML(
-                # width=param["width"],
-                # height=param["height"],
                 layout={
                     "grid_area": name,
                     "padding": "0",
@@ -141,24 +115,6 @@ class Axes(ipw.GridBox):
                 "topspine",
             )
         }
-
-        # font_size = 12
-        # for canvas in self._margins.values():
-        #     canvas.font = f"{font_size}px sans-serif"
-        #     canvas.fill_style = "black"
-        #     canvas.text_align = "center"
-
-        # self._margins["xlabel"].text_baseline = "top"
-        # self._margins["ylabel"].text_baseline = "middle"
-        # self._margins["title"].text_baseline = "bottom"
-        # self._margins["leftspine"].text_align = "right"
-        # self._margins["leftspine"].text_baseline = "middle"
-        # self._margins["rightspine"].text_align = "left"
-        # self._margins["rightspine"].text_baseline = "middle"
-        # self._margins["topspine"].text_align = "center"
-        # self._margins["topspine"].text_baseline = "bottom"
-        # self._margins["bottomspine"].text_align = "center"
-        # self._margins["bottomspine"].text_baseline = "bottom"
 
         if figure is not None:
             self.set_figure(figure)
@@ -224,7 +180,6 @@ class Axes(ipw.GridBox):
                 self._zoom_mouse_moved = False
 
     def on_mouse_move(self, change):
-        # print("MOUSE MOVE", change)
         if self._zoom_mouse_down:
             self._zoom_mouse_moved = True
             x, y, _ = change["new"]
@@ -272,8 +227,6 @@ class Axes(ipw.GridBox):
         self._ymin = ymin
         self._ymax = ymax
 
-        # print("after autoscale", xmin, xmax, ymin, ymax)
-
         self._background_mesh.geometry = p3.BoxGeometry(
             width=2 * (self._xmax - self._xmin),
             height=2 * (self._ymax - self._ymin),
@@ -298,19 +251,8 @@ class Axes(ipw.GridBox):
         """
         Create tick labels on outline edges
         """
-        # string = (
-        #     # f'<div style="position: relative; height: 2em; background-color: red;">'
-        #     f'<svg height="{self._margin_with_ticks}" width="{self.width}">'
-        #     f'<line x1="0" y1="0" x2="{self.width}" y2="0" '
-        #     'style="stroke:black;stroke-width:1" />'
-        # )
         tick_length = 6
         label_offset = 3
-
-        # # (xmin, xmax), (ymin, ymax) = self._ax.get_xlim(), self._ax.get_ylim()
-        # xmin, xmax = self.camera.left, self.camera.right
-
-        # xt = ax.get_xticks()
 
         xticks = self.get_xticks()
         xlabels = [lab.get_text() for lab in self.get_xticklabels()]
@@ -319,13 +261,6 @@ class Axes(ipw.GridBox):
         xticks_axes = self._ax.transAxes.inverted().transform(
             self._ax.transData.transform(xy)
         )[:, 0]
-
-        print("MAKE X TICKS", xticks.min(), xticks.max())
-
-        # print("textalign", self._margins["bottomspine"].text_align)
-
-        # bottom = self._margins["bottomspine"]
-        # top = self._margins["topspine"]
 
         bottom_string = (
             f'<svg height="{self._margin_with_ticks}" width="{self.width}">'
@@ -339,37 +274,10 @@ class Axes(ipw.GridBox):
             f'y2="{self._thin_margin}" style="stroke:black;stroke-width:1" />'
         )
 
-        # ctx = hold_canvas if hold else nullcontext
-
-        # with ctx():
-        #     for canvas in (bottom, top):
-        #         canvas.clear()
-        #         # Re-set canvas properties after clear() resets them
-        #         canvas.text_align = "center"
-        #         canvas.fill_style = "black"
-
-        #     bottom.text_baseline = "top"
-        #     # top.text_baseline = "bottom"
-
-        #     bottom.begin_path()
-        #     bottom.move_to(0, 0)
-        #     bottom.line_to(self.width, 0)
-        #     bottom.stroke()
-
-        #     top.begin_path()
-        #     top.move_to(0, top.height)
-        #     top.line_to(self.width, top.height)
-        #     top.stroke()
-        # print("================")
-
         for tick, label in zip(xticks_axes, xlabels, strict=True):
-            # print(tick, label, latex_to_html(label))
             if tick < 0 or tick > 1.0:
                 continue
-            # x, y = self._ax.transData.transform((tick, ymin))
-            # x = (tick - xmin) / (xmax - xmin) * self.width
             x = tick * self.width
-            # Use SVG for better text rendering
             bottom_string += (
                 f'<line x1="{x}" y1="0" x2="{x}" y2="{tick_length}" '
                 'style="stroke:black;stroke-width:1" />'
@@ -380,60 +288,8 @@ class Axes(ipw.GridBox):
                 f"{latex_to_html(label)}</text>"
             )
 
-            # bottom.begin_path()
-            # bottom.move_to(x, 0)
-            # bottom.line_to(x, 0 + tick_length)
-            # bottom.stroke()
-            # # Label
-            # bottom.fill_text(
-            #     html_tags_to_unicode(latex_to_html(label)),
-            #     x,
-            #     0 + tick_length + label_offset,
-            # )
-
-            # top.begin_path()
-            # top.move_to(x, top.height)
-            # top.line_to(x, top.height - tick_length)
-            # top.stroke()
-
-            # string += (
-            #     f'<line x1="{x}" y1="0" x2="{x}" y2="7" '
-            #     'style="stroke:black;stroke-width:1" />'
-            # )
-            # string += (
-            #     f'<text x="{x}" y="9" text-anchor="middle" dominant-baseline="hanging">'
-            #     f"{label}</text>"
-            # )
-
-            # string += (
-            #     f'<div style="position: absolute; top: 0px; left: {x}px; '
-            #     'display: inline-block; padding-top: 2px;">'
-            #     '<div style="position: absolute; top: 0; left: 50%; '
-            #     "transform: translateX(-50%); width: 1px; height: 7px; "
-            #     'background-color: black;"></div>'
-            #     f"{label.replace(' ', '&nbsp;')}</div>"
-            # )
         bottom_string += "</svg></div>"
-        # print("BOTTOM STRING", bottom_string)
         self._margins["bottomspine"].value = bottom_string
-
-        # ticker_ = ticker.AutoLocator()
-        # ticks = ticker_.tick_values(left, right)
-        # string = '<div style="position: relative; height: 30px;">'
-        # precision = max(-round(np.log10(right - left)) + 1, 0)
-        # for tick in ticks:
-        #     if left + 0.01 * (right - left) <= tick <= right:
-        #         x = (tick - left) / (right - left) * self.width - 5
-        #         string += (
-        #             f'<div style="position: absolute; left: {x}px; top: 4px;">'
-        #             f"{value_to_string(tick, precision=precision)}</div>"
-        #         )
-        #         string += (
-        #             f'<div style="position: absolute; left: {x}px;top: -6px">'
-        #             "&#9589;</div>"
-        #         )
-        # string += "</div>"
-        return
 
     def _make_yticks(self):
         """
@@ -443,8 +299,6 @@ class Axes(ipw.GridBox):
         tick_length = 6
         label_offset = 3
 
-        # (xmin, xmax), (ymin, ymax) = self._ax.get_xlim(), self._ax.get_ylim()
-        # ymin, ymax = self.camera.bottom, self.camera.top
         yticks = self.get_yticks()
         ylabels = [lab.get_text() for lab in self.get_yticklabels()]
 
@@ -469,9 +323,7 @@ class Axes(ipw.GridBox):
         for tick, label in zip(yticks_axes, ylabels, strict=True):
             if tick < 0 or tick > 1.0:
                 continue
-            # x, y = self._ax.transData.transform((xmin, tick))
             y = self.height - (tick * self.height)
-            # Use SVG for better text rendering
             left_string += (
                 f'<line x1="{self._margin_with_ticks}" y1="{y}" '
                 f'x2="{self._margin_with_ticks - tick_length}" y2="{y}" '
@@ -484,16 +336,6 @@ class Axes(ipw.GridBox):
                 f"{latex_to_html(label)}</text>"
             )
 
-            # left.begin_path()
-            # left.move_to(left.width, y)
-            # left.line_to(left.width - tick_length, y)
-            # left.stroke()
-            # # Label
-            # left.fill_text(
-            #     html_tags_to_unicode(latex_to_html(label)),
-            #     left.width - tick_length - label_offset,
-            #     y,
-            # )
         left_string += "</svg></div>"
         self._margins["leftspine"].value = left_string
 
@@ -526,8 +368,6 @@ class Axes(ipw.GridBox):
         self._make_yticks()
 
     def get_xticks(self):
-        # print(self._xmin, self._xmax)
-        # print(self._ax.get_xlim())
         return self._ax.get_xticks()
 
     def get_xticklabels(self):
@@ -556,6 +396,7 @@ class Axes(ipw.GridBox):
         self._ax.set_yscale(scale)
         for artist in self._artists:
             artist._set_yscale(scale)
+        self.autoscale()
         self._make_yticks()
 
     def zoom(self, box):
@@ -577,94 +418,22 @@ class Axes(ipw.GridBox):
         else:
             ylim = (self._zoom_ymin, self._zoom_ymax)
         self._ax.set(xlim=xlim, ylim=ylim)
-        self._make_xticks(
-            # left=self._zoom_xmin, right=self._zoom_xmax
-        )
-        self._make_yticks(
-            # bottom=self._zoom_ymin, top=self._zoom_ymax
-        )
-
-    # def _apply_zoom(self):
-    #     for artist in self._artists:
-    #         artist._apply_transform()
-
-    def reset(self):
-        with self.camera.hold_trait_notifications():
-            self.camera.left = (
-                self._xmin if self.get_xscale() == "linear" else np.log10(self._xmin)
-            )
-            self.camera.right = (
-                self._xmax if self.get_xscale() == "linear" else np.log10(self._xmax)
-            )
-            self.camera.bottom = (
-                self._ymin if self.get_yscale() == "linear" else np.log10(self._ymin)
-            )
-            self.camera.top = (
-                self._ymax if self.get_yscale() == "linear" else np.log10(self._ymax)
-            )
-        self._ax.set(xlim=(self._xmin, self._xmax), ylim=(self._ymin, self._ymax))
-        # self._update_ticks_and_layout()
-        # with hold_canvas():
         self._make_xticks()
         self._make_yticks()
 
-    # def _update_ticks_and_layout(self):
-    #     self._make_xticks(
-    #         # left=self.camera.left, right=self.camera.right
-    #     )
-    #     self._make_yticks(
-    #         # bottom=self.camera.bottom, top=self.camera.top
-    #     )
-    #     # self._update_layout()
-
-    def _update_layout(self):
-        return
-        areas = ""
-        columns = ""
-        rows = ""
-        if self._title.value:
-            areas += (
-                f'"{"." if self._ylabel.value else ""} '
-                f'{"." if self._leftspine.value else ""} title ."\n'
-            )
-            rows += "30px "
-        if self._topspine.value:
-            areas += (
-                f'"{"." if self._ylabel.value else ""} '
-                f"{'.' if self._leftspine.value else ''} "
-                'topspine topspine"\n'
-            )
-            rows += "35px "
-        areas += (
-            f'"{"ylabel" if self._ylabel.value else ""} '
-            f"{'leftspine' if self._leftspine.value else ''} renderer "
-            f'{"rightspine" if self._rightspine.value else "."}"\n'
-        )
-        rows += f"{self.height}px "
-        if self._bottomspine.value:
-            areas += (
-                f'"{"." if self._ylabel.value else ""} '
-                f"{'leftspine' if self._leftspine.value else ''} "
-                'bottomspine bottomspine"\n'
-            )
-            rows += "35px "
-        if self._xlabel.value:
-            areas += (
-                f'"{"." if self._ylabel.value else ""} '
-                f"{'.' if self._leftspine.value else ''} "
-                f'xlabel {"rightspine" if self._rightspine.value else "."}"'
-            )
-            rows += "30px"
-
-        columns = (
-            f"{'30px' if self._ylabel.value else ''} "
-            f"{'80px' if self._leftspine.value else ''} "
-            f"{self.width}px 35px"
-        )
-
-        self.layout.grid_template_columns = columns
-        self.layout.grid_template_rows = rows
-        self.layout.grid_template_areas = areas
+    def reset(self):
+        xop = np.log10 if self.get_xscale() == "log" else float
+        left, right = xop(self._xmin), xop(self._xmax)
+        yop = np.log10 if self.get_yscale() == "log" else float
+        bottom, top = yop(self._ymin), yop(self._ymax)
+        with self.camera.hold_trait_notifications():
+            self.camera.left = left
+            self.camera.right = right
+            self.camera.bottom = bottom
+            self.camera.top = top
+        self._ax.set(xlim=(self._xmin, self._xmax), ylim=(self._ymin, self._ymax))
+        self._make_xticks()
+        self._make_yticks()
 
     def set_figure(self, fig):
         self._fig = fig
@@ -672,7 +441,6 @@ class Axes(ipw.GridBox):
         self.height = self._fig.height // self._fig._nrows
         self.renderer.layout.height = f"{self.height}px"
         self.renderer.layout.width = f"{self.width}px"
-        # self._update_ticks_and_layout()
         self._make_xticks()
         self._make_yticks()
 
@@ -680,6 +448,7 @@ class Axes(ipw.GridBox):
         self.controls.enablePan = value
 
     def set_xlabel(self, label, fontsize="1.3em"):
+        return
         if label:
             self._xlabel.value = (
                 '<div style="position:relative; '
@@ -694,9 +463,10 @@ class Axes(ipw.GridBox):
         self._update_layout()
 
     def get_xlabel(self):
-        return self._xlabel._raw_string
+        return ""  # self._xlabel._raw_string
 
     def set_ylabel(self, label, fontsize="1.3em"):
+        return
         if label:
             self._ylabel.value = (
                 '<div style="position:relative; '
@@ -712,9 +482,10 @@ class Axes(ipw.GridBox):
         self._update_layout()
 
     def get_ylabel(self):
-        return self._ylabel._raw_string
+        return ""  # self._ylabel._raw_string
 
     def set_title(self, title, fontsize="1.3em"):
+        return
         if title:
             self._title.value = (
                 '<div style="position:relative; '
@@ -729,7 +500,7 @@ class Axes(ipw.GridBox):
         self._update_layout()
 
     def get_title(self):
-        return self._title._raw_string
+        return ""  # self._title._raw_string
 
     def plot(self, *args, color=None, **kwargs):
         if color is None:
@@ -746,6 +517,7 @@ class Axes(ipw.GridBox):
         coll = Points(*args, color=color, **kwargs)
         self.collections.append(coll)
         self.add_artist(coll)
+        print("calling autoscale from scatter")
         self.autoscale()
         return coll
 
