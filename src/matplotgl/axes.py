@@ -40,7 +40,7 @@ class Axes(ipw.GridBox):
         self._background_mesh = p3.Mesh(
             geometry=self._background_geometry,
             material=self._background_material,
-            position=(0, 0, -200),
+            position=(0, 0, -101),
         )
 
         self._mouse_cursor_picker = p3.Picker(
@@ -58,18 +58,20 @@ class Axes(ipw.GridBox):
             controlling=self._background_mesh, event="mousemove"
         )
 
-        self._zoom_rect_geometry = p3.LineGeometry(
-            positions=np.zeros((5, 3), dtype="float32")
-        )
+        rect_pos = np.zeros((5, 3), dtype="float32")
+        rect_pos[:, 2] = 101.0
+        self._zoom_rect_geometry = p3.LineGeometry(positions=rect_pos)
         self._zoom_rect_line = p3.Line2(
             geometry=self._zoom_rect_geometry,
-            material=p3.LineMaterial(color="black", linewidth=2),
+            material=p3.LineMaterial(color="black", linewidth=1.5),
             visible=False,
             # depthTest=False,
             # renderOrder=1000,
         )
 
-        self.camera = p3.OrthographicCamera(-0.001, 1.0, 1.0, -0.001, -1, 300)
+        self.camera = p3.OrthographicCamera(
+            -0.001, 1.0, 1.0, -0.001, -1, 300, position=[0, 0, 102]
+        )
 
         self.scene = p3.Scene(
             children=[self.camera, self._background_mesh, self._zoom_rect_line],
@@ -79,7 +81,10 @@ class Axes(ipw.GridBox):
         )
 
         self.controls = p3.OrbitControls(
-            controlling=self.camera, enableZoom=False, enablePan=False
+            controlling=self.camera,
+            enableZoom=False,
+            enablePan=False,
+            enableRotate=False,
         )
         self.renderer = p3.Renderer(
             camera=self.camera,
@@ -195,10 +200,11 @@ class Axes(ipw.GridBox):
 
     def on_mouse_down(self, change):
         self._zoom_mouse_down = True
-        x, y, z = change["new"]
-        self._zoom_rect_line.geometry.positions = np.array(
-            [[x, x, x, x, x], [y, y, y, y, y], [0, 0, 0, 0, 0]], dtype="float32"
-        ).T
+        x, y, _ = change["new"]
+        new_pos = self._zoom_rect_line.geometry.positions.copy()
+        new_pos[:, 0] = x
+        new_pos[:, 1] = y
+        self._zoom_rect_line.geometry.positions = new_pos
         self._zoom_rect_line.visible = True
 
     def on_mouse_up(self, *ignored):
@@ -221,7 +227,7 @@ class Axes(ipw.GridBox):
         # print("MOUSE MOVE", change)
         if self._zoom_mouse_down:
             self._zoom_mouse_moved = True
-            x, y, z = change["new"]
+            x, y, _ = change["new"]
             new_pos = self._zoom_rect_line.geometry.positions.copy()
             new_pos[2:4, 0] = x
             new_pos[1:3, 1] = y
@@ -562,10 +568,15 @@ class Axes(ipw.GridBox):
             self.camera.right = self._zoom_xmax
             self.camera.bottom = self._zoom_ymin
             self.camera.top = self._zoom_ymax
-        self._ax.set(
-            xlim=(self._zoom_xmin, self._zoom_xmax),
-            ylim=(self._zoom_ymin, self._zoom_ymax),
-        )
+        if self.get_xscale() == "log":
+            xlim = (10.0**self._zoom_xmin, 10.0**self._zoom_xmax)
+        else:
+            xlim = (self._zoom_xmin, self._zoom_xmax)
+        if self.get_yscale() == "log":
+            ylim = (10.0**self._zoom_ymin, 10.0**self._zoom_ymax)
+        else:
+            ylim = (self._zoom_ymin, self._zoom_ymax)
+        self._ax.set(xlim=xlim, ylim=ylim)
         self._make_xticks(
             # left=self._zoom_xmin, right=self._zoom_xmax
         )

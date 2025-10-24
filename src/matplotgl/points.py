@@ -23,7 +23,7 @@ class Points:
             attributes={
                 "position": p3.BufferAttribute(
                     array=np.array(
-                        [self._x, self._y, np.full_like(self._x, self._zorder - 50)],
+                        [self._x, self._y, np.full_like(self._x, self._zorder)],
                         dtype="float32",
                     ).T
                 ),
@@ -49,7 +49,8 @@ class Points:
             xx = self._x if self._xscale == "linear" else np.log10(self._x)
             yy = self._y if self._yscale == "linear" else np.log10(self._y)
         self._geometry.attributes["position"].array = np.array(
-            [xx, yy, np.full_like(xx, self._zorder - 50)],
+            # [xx, yy, np.full_like(xx, self._zorder - 50)],
+            [xx, yy, np.full_like(xx, self._zorder)],
             dtype="float32",
         ).T
 
