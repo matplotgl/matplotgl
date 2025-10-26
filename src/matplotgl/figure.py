@@ -17,7 +17,7 @@ class Figure(HBar):
 
         self.toolbar = Toolbar()
         self.toolbar._home.on_click(self.home)
-        self.toolbar._zoom.observe(self.toggle_pickers, names="value")
+        self.toolbar._zoom.observe(self.toggle_zoom, names="value")
         self.toolbar._pan.observe(self.toggle_pan, names="value")
 
         super().__init__([self.toolbar])
@@ -26,7 +26,7 @@ class Figure(HBar):
         for ax in self.axes:
             ax.reset()
 
-    def toggle_pickers(self, change):
+    def toggle_zoom(self, change):
         for ax in self.axes:
             if change["new"]:
                 ax._zoom_down_picker.observe(ax.on_mouse_down, names=["point"])
@@ -38,15 +38,47 @@ class Figure(HBar):
                     ax._zoom_up_picker,
                     ax._zoom_move_picker,
                 ]
+                if self.toolbar._pan.value:
+                    self.toolbar._pan.value = False
+                ax._active_tool = "zoom"
             else:
                 ax._zoom_down_picker.unobserve_all()
                 ax._zoom_up_picker.unobserve_all()
                 ax._zoom_move_picker.unobserve_all()
                 ax.renderer.controls = [ax.controls]
+                ax._active_tool = None
 
     def toggle_pan(self, change):
         for ax in self.axes:
-            ax.toggle_pan(change["new"])
+            ax.controls.enablePan = change["new"]
+            if change["new"]:
+                if self.toolbar._zoom.value:
+                    self.toolbar._zoom.value = False
+                ax._active_tool = "pan"
+            else:
+                ax._active_tool = None
+
+    # def toggle_pickers(self, change):
+    #     for ax in self.axes:
+    #         if change["new"]:
+    #             ax._zoom_down_picker.observe(ax.on_mouse_down, names=["point"])
+    #             ax._zoom_up_picker.observe(ax.on_mouse_up, names=["point"])
+    #             ax._zoom_move_picker.observe(ax.on_mouse_move, names=["point"])
+    #             ax.renderer.controls = [
+    #                 ax.controls,
+    #                 ax._zoom_down_picker,
+    #                 ax._zoom_up_picker,
+    #                 ax._zoom_move_picker,
+    #             ]
+    #         else:
+    #             ax._zoom_down_picker.unobserve_all()
+    #             ax._zoom_up_picker.unobserve_all()
+    #             ax._zoom_move_picker.unobserve_all()
+    #             ax.renderer.controls = [ax.controls]
+
+    # def toggle_pan(self, change):
+    #     for ax in self.axes:
+    #         ax.toggle_pan(change["new"])
 
     def add_axes(self, ax):
         self.axes.append(ax)

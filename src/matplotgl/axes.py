@@ -28,7 +28,10 @@ class Axes(ipw.GridBox):
         self.collections = []
 
         # Make background to enable box zoom
-        self._background_geometry = p3.PlaneGeometry(
+        # self._background_geometry = p3.PlaneGeometry(
+        #     width=2, height=2, widthSegments=1, heightSegments=1
+        # )
+        self._background_geometry = p3.PlaneBufferGeometry(
             width=2, height=2, widthSegments=1, heightSegments=1
         )
         self._background_material = p3.MeshBasicMaterial(color=self.background_color)
@@ -65,6 +68,7 @@ class Axes(ipw.GridBox):
         self.camera = p3.OrthographicCamera(
             -0.001, 1.0, 1.0, -0.001, -1, 300, position=[0, 0, 102]
         )
+        self.camera.observe(self._on_camera_position_change, names=["position"])
 
         self.scene = p3.Scene(
             children=[self.camera, self._background_mesh, self._zoom_rect_line],
@@ -93,6 +97,18 @@ class Axes(ipw.GridBox):
         self._zoom_xmax = None
         self._zoom_ymin = None
         self._zoom_ymax = None
+
+        # Tool state: 'zoom' or 'pan'
+        self._active_tool = None
+
+        # Pan state tracking
+        self._pan_mouse_down = False
+        self._pan_start_x = None
+        self._pan_start_y = None
+        self._pan_camera_left = None
+        self._pan_camera_right = None
+        self._pan_camera_bottom = None
+        self._pan_camera_top = None
 
         self._margin_with_ticks = 50
         self._thin_margin = 5
@@ -155,13 +171,23 @@ class Axes(ipw.GridBox):
             canvas.stroke()
 
     def on_mouse_down(self, change):
-        self._zoom_mouse_down = True
         x, y, _ = change["new"]
-        new_pos = self._zoom_rect_line.geometry.positions.copy()
-        new_pos[:, 0] = x
-        new_pos[:, 1] = y
-        self._zoom_rect_line.geometry.positions = new_pos
-        self._zoom_rect_line.visible = True
+        if self._active_tool == "zoom":
+            self._zoom_mouse_down = True
+            new_pos = self._zoom_rect_line.geometry.positions.copy()
+            new_pos[:, 0] = x
+            new_pos[:, 1] = y
+            self._zoom_rect_line.geometry.positions = new_pos
+            self._zoom_rect_line.visible = True
+        # elif self._active_tool == "pan":
+        #     self._pan_mouse_down = True
+        #     self._pan_start_x = x
+        #     self._pan_start_y = y
+        #     self._pan_camera_position = self.camera.position
+        #     # self._pan_camera_left = self.camera.left
+        #     # self._pan_camera_right = self.camera.right
+        #     # self._pan_camera_bottom = self.camera.bottom
+        #     # self._pan_camera_top = self.camera.top
 
     def on_mouse_up(self, *ignored):
         if self._zoom_mouse_down:
@@ -178,6 +204,11 @@ class Axes(ipw.GridBox):
                     ]
                 )
                 self._zoom_mouse_moved = False
+        # elif self._pan_mouse_down:
+        #     self._pan_mouse_down = False
+        #     self._pan_start_x = None
+        #     self._pan_start_y = None
+        #     self._pan_camera_position = None
 
     def on_mouse_move(self, change):
         if self._zoom_mouse_down:
@@ -187,6 +218,31 @@ class Axes(ipw.GridBox):
             new_pos[2:4, 0] = x
             new_pos[1:3, 1] = y
             self._zoom_rect_line.geometry.positions = new_pos
+        # elif self._pan_mouse_down:
+        #     x, y, _ = change["new"]
+        #     dx = x - self._pan_start_x
+        #     dy = y - self._pan_start_y
+        #     pos = self.camera.position
+        #     print("Pan xyz:", x, y)
+        #     print("Pan start:", self._pan_start_x, self._pan_start_y)
+        #     print(f"Panning by ({dx}, {dy})")
+        #     print("Old camera pos:", pos)
+        #     self.camera.position = [pos[0] - dx, pos[1] - dy, pos[2]]
+        #     print("New camera pos:", self.camera.position)
+        #     xlim = (self._xmin - dx, self._xmax - dx)
+        #     ylim = (self._ymin - dy, self._ymax - dy)
+        #     self._ax.set(xlim=xlim, ylim=ylim)
+        #     self._make_xticks()
+        #     self._make_yticks()
+
+    def _on_camera_position_change(self, change):
+        x, y, _ = change["new"]
+        # Update tick labels or other UI elements here
+        xlim = self._xmin + x, self._xmax + x
+        ylim = self._ymin + y, self._ymax + y
+        self._ax.set(xlim=xlim, ylim=ylim)
+        self._make_xticks()
+        self._make_yticks()
 
     @property
     def width(self):
@@ -227,12 +283,21 @@ class Axes(ipw.GridBox):
         self._ymin = ymin
         self._ymax = ymax
 
-        self._background_mesh.geometry = p3.BoxGeometry(
+        # self._background_mesh.geometry = p3.BoxGeometry(
+        #     width=2 * (self._xmax - self._xmin),
+        #     height=2 * (self._ymax - self._ymin),
+        #     widthSegments=1,
+        #     heightSegments=1,
+        # )
+        self._background_mesh.geometry = p3.PlaneGeometry(
             width=2 * (self._xmax - self._xmin),
             height=2 * (self._ymax - self._ymin),
             widthSegments=1,
             heightSegments=1,
         )
+        # self._background_mesh.geometry.width = 2 * (self._xmax - self._xmin)
+        # self._background_mesh.geometry.height = 2 * (self._ymax - self._ymin)
+
         self._background_mesh.position = [
             0.5 * (self._xmin + self._xmax),
             0.5 * (self._ymin + self._ymax),
@@ -431,6 +496,7 @@ class Axes(ipw.GridBox):
             self.camera.right = right
             self.camera.bottom = bottom
             self.camera.top = top
+            self.camera.position = [0, 0, self.camera.position[2]]
         self._ax.set(xlim=(self._xmin, self._xmax), ylim=(self._ymin, self._ymax))
         self._make_xticks()
         self._make_yticks()
