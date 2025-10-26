@@ -497,6 +497,8 @@ class Axes(ipw.GridBox):
             self.camera.bottom = bottom
             self.camera.top = top
             self.camera.position = [0, 0, self.camera.position[2]]
+            self.controls.target = [0, 0, 0]
+            # self.camera.position = [0, 0, self.camera.position[2]]
         self._ax.set(xlim=(self._xmin, self._xmax), ylim=(self._ymin, self._ymax))
         self._make_xticks()
         self._make_yticks()
