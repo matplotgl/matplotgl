@@ -93,10 +93,10 @@ class Axes(ipw.GridBox):
 
         self._zoom_mouse_down = False
         self._zoom_mouse_moved = False
-        self._zoom_xmin = None
-        self._zoom_xmax = None
-        self._zoom_ymin = None
-        self._zoom_ymax = None
+        self._zoom_limits = {}
+        # self._zoom_xmax = None
+        # self._zoom_ymin = None
+        # self._zoom_ymax = None
 
         # Tool state: 'zoom' or 'pan'
         self._active_tool = None
@@ -238,8 +238,14 @@ class Axes(ipw.GridBox):
     def _on_camera_position_change(self, change):
         x, y, _ = change["new"]
         # Update tick labels or other UI elements here
-        xlim = self._xmin + x, self._xmax + x
-        ylim = self._ymin + y, self._ymax + y
+        xlim = (
+            self._zoom_limits.get("xmin", self._xmin) + x,
+            self._zoom_limits.get("xmax", self._xmax) + x,
+        )
+        ylim = (
+            self._zoom_limits.get("ymin", self._ymin) + y,
+            self._zoom_limits.get("ymax", self._ymax) + y,
+        )
         self._ax.set(xlim=xlim, ylim=ylim)
         self._make_xticks()
         self._make_yticks()
@@ -409,6 +415,8 @@ class Axes(ipw.GridBox):
 
     def set_xlim(self, left, right=None):
         self._ax.set_xlim(left, right)
+        self._zoom_limits.pop("xmin", None)
+        self._zoom_limits.pop("xmax", None)
         if right is None:
             right = left[1]
             left = left[0]
@@ -423,6 +431,8 @@ class Axes(ipw.GridBox):
 
     def set_ylim(self, bottom, top=None):
         self._ax.set_ylim(bottom, top)
+        self._zoom_limits.pop("ymin", None)
+        self._zoom_limits.pop("ymax", None)
         if top is None:
             top = bottom[1]
             bottom = bottom[0]
@@ -465,28 +475,37 @@ class Axes(ipw.GridBox):
         self._make_yticks()
 
     def zoom(self, box):
-        self._zoom_xmin = box[0]
-        self._zoom_xmax = box[1]
-        self._zoom_ymin = box[2]
-        self._zoom_ymax = box[3]
+        self._zoom_limits = {
+            "xmin": box[0],
+            "xmax": box[1],
+            "ymin": box[2],
+            "ymax": box[3],
+        }
         with self.camera.hold_trait_notifications():
-            self.camera.left = self._zoom_xmin
-            self.camera.right = self._zoom_xmax
-            self.camera.bottom = self._zoom_ymin
-            self.camera.top = self._zoom_ymax
+            self.camera.left = self._zoom_limits["xmin"]
+            self.camera.right = self._zoom_limits["xmax"]
+            self.camera.bottom = self._zoom_limits["ymin"]
+            self.camera.top = self._zoom_limits["ymax"]
         if self.get_xscale() == "log":
-            xlim = (10.0**self._zoom_xmin, 10.0**self._zoom_xmax)
+            xlim = (
+                10.0 ** self._zoom_limits["xmin"],
+                10.0 ** self._zoom_limits["xmax"],
+            )
         else:
-            xlim = (self._zoom_xmin, self._zoom_xmax)
+            xlim = (self._zoom_limits["xmin"], self._zoom_limits["xmax"])
         if self.get_yscale() == "log":
-            ylim = (10.0**self._zoom_ymin, 10.0**self._zoom_ymax)
+            ylim = (
+                10.0 ** self._zoom_limits["ymin"],
+                10.0 ** self._zoom_limits["ymax"],
+            )
         else:
-            ylim = (self._zoom_ymin, self._zoom_ymax)
+            ylim = (self._zoom_limits["ymin"], self._zoom_limits["ymax"])
         self._ax.set(xlim=xlim, ylim=ylim)
         self._make_xticks()
         self._make_yticks()
 
     def reset(self):
+        self._zoom_limits.clear()
         xop = np.log10 if self.get_xscale() == "log" else float
         left, right = xop(self._xmin), xop(self._xmax)
         yop = np.log10 if self.get_yscale() == "log" else float
