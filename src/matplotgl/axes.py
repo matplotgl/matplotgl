@@ -22,6 +22,7 @@ class Axes(ipw.GridBox):
         self._ymin = 0.0
         self._ymax = 1.0
         self._fig = None
+        # self._dpi = 96
         self._ax = ax
         self._artists = []
         self.lines = []
@@ -110,8 +111,8 @@ class Axes(ipw.GridBox):
         self._pan_camera_bottom = None
         self._pan_camera_top = None
 
-        self._margin_with_ticks = 50
-        self._thin_margin = 5
+        # self._margin_with_ticks = 50
+        self._thin_margin = 3
 
         self._margins = {
             name: ClickableHTML(
@@ -257,10 +258,12 @@ class Axes(ipw.GridBox):
     @width.setter
     def width(self, w):
         self.renderer.width = w
-        self._margins["xlabel"].width = w
-        self._margins["title"].width = w
-        self._margins["bottomspine"].width = w + self._margin_with_ticks
-        self._margins["topspine"].width = w + self._margin_with_ticks
+        self._make_xticks()
+        # self.set_xlabel(self.get_xlabel())
+        # self._margins["xlabel"].width = w
+        # self._margins["title"].width = w
+        # self._margins["bottomspine"].width = w + self._margin_with_ticks
+        # self._margins["topspine"].width = w + self._margin_with_ticks
 
     @property
     def height(self):
@@ -269,9 +272,11 @@ class Axes(ipw.GridBox):
     @height.setter
     def height(self, h):
         self.renderer.height = h
-        self._margins["ylabel"].height = h
-        self._margins["leftspine"].height = h + self._margin_with_ticks
-        self._margins["rightspine"].height = h
+        self._make_yticks()
+        # self.set_ylabel(self.get_ylabel())
+        # self._margins["ylabel"].height = h
+        # self._margins["leftspine"].height = h + self._margin_with_ticks
+        # self._margins["rightspine"].height = h
 
     def autoscale(self):
         xmin = np.inf
@@ -334,13 +339,13 @@ class Axes(ipw.GridBox):
         )[:, 0]
 
         bottom_string = (
-            f'<svg height="{self._margin_with_ticks}" width="{self.width}">'
-            f'<line x1="0" y1="0" x2="{self.width}" y2="0" '
+            f'<svg height="calc(1.2em + {tick_length}px + {label_offset}px)" '
+            f'width="{self.width}"><line x1="0" y1="0" x2="{self.width}" y2="0" '
             'style="stroke:black;stroke-width:1" />'
         )
 
         self._margins["topspine"].value = (
-            f'<svg height="{self._thin_margin}" width="{self.width}">'
+            f'<svg height="{self._thin_margin}px" width="{self.width}">'
             f'<line x1="0" y1="{self._thin_margin}" x2="{self.width}" '
             f'y2="{self._thin_margin}" style="stroke:black;stroke-width:1" />'
         )
@@ -371,17 +376,24 @@ class Axes(ipw.GridBox):
         label_offset = 3
 
         yticks = self.get_yticks()
-        ylabels = [lab.get_text() for lab in self.get_yticklabels()]
+        ylabels = self.get_yticklabels()
+        ytexts = [lab.get_text() for lab in ylabels]
 
         xy = np.vstack((np.zeros_like(yticks), yticks)).T
         yticks_axes = self._ax.transAxes.inverted().transform(
             self._ax.transData.transform(xy)
         )[:, 1]
 
+        # Predict width of the left margin based on the longest label
+        max_length = max(lab.get_tightbbox().width for lab in ylabels)
+        width = f"calc({max_length}px + {tick_length}px + {label_offset}px)"
+        width1 = f"calc({max_length}px + {label_offset}px)"
+        width2 = f"calc({max_length}px)"
+
         left_string = (
-            f'<svg height="{self.height}" width="{self._margin_with_ticks}">'
-            f'<line x1="{self._margin_with_ticks}" y1="0" '
-            f'x2="{self._margin_with_ticks}" y2="{self.height}" '
+            f'<svg height="{self.height}" width="{width}">'
+            f'<line x1="{width}" y1="0" '
+            f'x2="{width}" y2="{self.height}" '
             'style="stroke:black;stroke-width:1" />'
         )
 
@@ -391,18 +403,18 @@ class Axes(ipw.GridBox):
             f'style="stroke:black;stroke-width:1" />'
         )
 
-        for tick, label in zip(yticks_axes, ylabels, strict=True):
+        for tick, label in zip(yticks_axes, ytexts, strict=True):
             if tick < 0 or tick > 1.0:
                 continue
             y = self.height - (tick * self.height)
             left_string += (
-                f'<line x1="{self._margin_with_ticks}" y1="{y}" '
-                f'x2="{self._margin_with_ticks - tick_length}" y2="{y}" '
+                f'<line x1="{width}" y1="{y}" '
+                f'x2="{width1}" y2="{y}" '
                 'style="stroke:black;stroke-width:1" />'
             )
 
             left_string += (
-                f'<text x="{self._margin_with_ticks - tick_length - label_offset}" '
+                f'<text x="{width2}" '
                 f'y="{y}" text-anchor="end" dominant-baseline="middle">'
                 f"{latex_to_html(label)}</text>"
             )
@@ -524,6 +536,7 @@ class Axes(ipw.GridBox):
 
     def set_figure(self, fig):
         self._fig = fig
+        # self._dpi = fig._dpi
         self.width = self._fig.width // self._fig._ncols
         self.height = self._fig.height // self._fig._nrows
         self.renderer.layout.height = f"{self.height}px"
@@ -536,10 +549,12 @@ class Axes(ipw.GridBox):
 
     def set_xlabel(self, label, fontsize="1.1em"):
         if label:
+            # Height should be 115% of fontsize to account for line height
+            # height = "calc(1.15 * {fontsize})"
             self._margins["xlabel"].value = (
                 '<div style="position:relative; '
                 # f'width: {self.width}px; height: {fontsize};">'
-                f'width: {self.width}px; height: 1.2em;">'
+                f'width: {self.width}px; height: calc(1.3 * {fontsize});">'
                 '<div style="position:relative; top: 50%;left: 50%; '
                 f"transform: translate(-50%, -50%); font-size: {fontsize};"
                 f'float:left;">{label.replace(" ", "&nbsp;")}</div></div>'
@@ -555,7 +570,7 @@ class Axes(ipw.GridBox):
         if label:
             self._margins["ylabel"].value = (
                 '<div style="position:relative; '
-                f'width: {fontsize}; height: {self.height}px;">'
+                f'width: calc(1.25 * {fontsize}); height: {self.height}px;">'
                 '<div style="position:relative; top: 50%;left: 50%; '
                 f"transform: translate(-50%, -50%) rotate(-90deg); "
                 f"font-size: {fontsize};"
