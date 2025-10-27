@@ -82,10 +82,11 @@ class Axes(ipw.GridBox):
             enablePan=False,
             enableRotate=False,
         )
+        self._base_controls = [self.controls, self._mouse_cursor_picker]
         self.renderer = p3.Renderer(
             camera=self.camera,
             scene=self.scene,
-            controls=[self.controls, self._mouse_cursor_picker],
+            controls=self._base_controls,
             width=200,
             height=200,
             layout={"grid_area": "renderer", "padding": "0", "margin": "0"},
@@ -123,15 +124,25 @@ class Axes(ipw.GridBox):
                 },
             )
             for name in (
-                "xlabel",
-                "ylabel",
-                "title",
+                # "xlabel",
+                # "ylabel",
+                # "title",
                 "leftspine",
                 "rightspine",
                 "bottomspine",
                 "topspine",
+                # "cursor",
+                "colorbar",
             )
         }
+        self._margins.update(
+            {
+                name: ipw.HTML(
+                    layout={"grid_area": name, "padding": "0", "margin": "0"}
+                )
+                for name in ("xlabel", "ylabel", "title", "cursor")
+            }
+        )
 
         if figure is not None:
             self.set_figure(figure)
@@ -142,14 +153,14 @@ class Axes(ipw.GridBox):
                 self.renderer,
             ],
             layout=ipw.Layout(
-                grid_template_columns="auto" * 4,
+                grid_template_columns="auto" * 5,
                 grid_template_rows="auto" * 5,
                 grid_template_areas="""
-            ". . title ."
-            ". . topspine topspine"
-            "ylabel leftspine renderer rightspine"
-            ". leftspine bottomspine bottomspine"
-            ". . xlabel ."
+            ". . title cursor cursor"
+            ". . topspine topspine colorbar"
+            "ylabel leftspine renderer rightspine colorbar"
+            ". leftspine bottomspine bottomspine colorbar"
+            ". . xlabel . ."
             """,
                 padding="0",
                 grid_gap="0px 0px",
@@ -158,18 +169,14 @@ class Axes(ipw.GridBox):
         )
 
     def _update_cursor_position(self, change):
-        return
-        # Add text at the bottom right corner of the topspine canvas
-        x, y, z = change["new"]
-        canvas = self._margins["topspine"]
-        with hold_canvas():
-            canvas.clear()
-            canvas.text_align = "right"
-            canvas.fill_text(f"({x:.2f}, {y:.2f})", self.width - 10, canvas.height - 10)
-            canvas.begin_path()
-            canvas.move_to(0, canvas.height)
-            canvas.line_to(self.width, canvas.height)
-            canvas.stroke()
+        print("Cursor position change:", change)
+        # Add text at the top right corner showing cursor position
+        x, y, _ = change["new"]
+        self._margins["cursor"].value = (
+            '<div style="position:relative; height: 1.1em; width: 80px;">'
+            '<div style="position:absolute; top:50%; transform: translateY(-50%);">'
+            f"({x:.2f}, {y:.2f})</div></div>"
+        )
 
     def on_mouse_down(self, change):
         x, y, _ = change["new"]
@@ -583,23 +590,21 @@ class Axes(ipw.GridBox):
     def get_ylabel(self):
         return self._margins["ylabel"]._raw_string
 
-    def set_title(self, title, fontsize="1.3em"):
-        return
+    def set_title(self, title, fontsize="1.2em"):
         if title:
-            self._title.value = (
+            self._margins["title"].value = (
                 '<div style="position:relative; '
-                f'width: {self.width}px; height: 30px;">'
+                f'width: {self.width}px; height: calc(1.3 * {fontsize});">'
                 '<div style="position:relative; top: 50%;left: 50%; '
                 f"transform: translate(-50%, -50%); font-size: {fontsize};"
                 f'float:left;">{title.replace(" ", "&nbsp;")}</div></div>'
             )
         else:
-            self._title.value = ""
-        self._title._raw_string = title
-        self._update_layout()
+            self._margins["title"].value = ""
+        self._margins["title"]._raw_string = title
 
     def get_title(self):
-        return ""  # self._title._raw_string
+        return self._margins["title"]._raw_string
 
     def plot(self, *args, color=None, **kwargs):
         if color is None:

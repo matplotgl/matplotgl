@@ -32,8 +32,7 @@ class Figure(HBar):
                 ax._zoom_down_picker.observe(ax.on_mouse_down, names=["point"])
                 ax._zoom_up_picker.observe(ax.on_mouse_up, names=["point"])
                 ax._zoom_move_picker.observe(ax.on_mouse_move, names=["point"])
-                ax.renderer.controls = [
-                    ax.controls,
+                ax.renderer.controls = ax._base_controls + [
                     ax._zoom_down_picker,
                     ax._zoom_up_picker,
                     ax._zoom_move_picker,
@@ -45,7 +44,7 @@ class Figure(HBar):
                 ax._zoom_down_picker.unobserve_all()
                 ax._zoom_up_picker.unobserve_all()
                 ax._zoom_move_picker.unobserve_all()
-                ax.renderer.controls = [ax.controls]
+                ax.renderer.controls = ax._base_controls
                 ax._active_tool = None
 
     def toggle_pan(self, change):
