@@ -52,7 +52,7 @@ class Line:
             )
             self._vertices_material = p3.PointsMaterial(color=self._color, size=ms)
             self._vertices = p3.Points(
-                geometry=self._geometry, material=self._vertices_material
+                geometry=self._vertices_geometry, material=self._vertices_material
             )
 
     def get_bbox(self):

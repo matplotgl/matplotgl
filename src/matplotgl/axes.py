@@ -534,42 +534,39 @@ class Axes(ipw.GridBox):
     def toggle_pan(self, value):
         self.controls.enablePan = value
 
-    def set_xlabel(self, label, fontsize="1.3em"):
-        return
+    def set_xlabel(self, label, fontsize="1.1em"):
         if label:
-            self._xlabel.value = (
+            self._margins["xlabel"].value = (
                 '<div style="position:relative; '
-                f'width: {self.width}px; height: 30px;">'
+                # f'width: {self.width}px; height: {fontsize};">'
+                f'width: {self.width}px; height: 1.2em;">'
                 '<div style="position:relative; top: 50%;left: 50%; '
                 f"transform: translate(-50%, -50%); font-size: {fontsize};"
                 f'float:left;">{label.replace(" ", "&nbsp;")}</div></div>'
             )
         else:
-            self._xlabel.value = ""
-        self._xlabel._raw_string = label
-        self._update_layout()
+            self._margins["xlabel"].value = ""
+        self._margins["xlabel"]._raw_string = label
 
     def get_xlabel(self):
-        return ""  # self._xlabel._raw_string
+        return self._margins["xlabel"]._raw_string
 
-    def set_ylabel(self, label, fontsize="1.3em"):
-        return
+    def set_ylabel(self, label, fontsize="1.1em"):
         if label:
-            self._ylabel.value = (
+            self._margins["ylabel"].value = (
                 '<div style="position:relative; '
-                f'width: 30px; height: {self.height}px;">'
+                f'width: {fontsize}; height: {self.height}px;">'
                 '<div style="position:relative; top: 50%;left: 50%; '
-                "transform: translate(-50%, -50%) rotate(-90deg); "
+                f"transform: translate(-50%, -50%) rotate(-90deg); "
                 f"font-size: {fontsize};"
                 f'float:left;">{label.replace(" ", "&nbsp;")}</div></div>'
             )
         else:
-            self._ylabel.value = ""
-        self._ylabel._raw_string = label
-        self._update_layout()
+            self._margins["ylabel"].value = ""
+        self._margins["ylabel"]._raw_string = label
 
     def get_ylabel(self):
-        return ""  # self._ylabel._raw_string
+        return self._margins["ylabel"]._raw_string
 
     def set_title(self, title, fontsize="1.3em"):
         return
