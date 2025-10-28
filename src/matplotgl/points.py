@@ -2,15 +2,40 @@
 # Copyright (c) 2023 Matplotgl contributors (https://github.com/matplotgl)
 
 import warnings
-from matplotlib import colors as mplc
 import numpy as np
 import pythreejs as p3
+
+import matplotlib.colors as mplc
+import matplotlib as mpl
 
 from .utils import fix_empty_range, find_limits
 
 
+SHADER_LIBRARY = {
+    "o": """
+varying vec3 vColor;
+
+void main() {
+    // Calculate distance from center of point sprite
+    vec2 center = gl_PointCoord - vec2(0.5, 0.5);
+    float dist = length(center);
+
+    // Discard fragments outside the circle
+    if (dist > 0.5) {
+        discard;
+    }
+
+    // Optional: add anti-aliasing at the edge
+    float alpha = 1.0 - smoothstep(0.45, 0.5, dist);
+
+    gl_FragColor = vec4(vColor, alpha);
+}
+"""
+}
+
+
 class Points:
-    def __init__(self, x, y, color="C0", s=3, zorder=0) -> None:
+    def __init__(self, x, y, c="C0", s=3, marker="o", zorder=0, cmap="viridis") -> None:
         self._x = np.asarray(x)
         self._y = np.asarray(y)
         self._rendered_x = self._x.copy()
@@ -18,18 +43,69 @@ class Points:
         self._xscale = "linear"
         self._yscale = "linear"
         self._zorder = zorder
-        self._color = mplc.to_hex(color)
-        self._geometry = p3.BufferGeometry(
-            attributes={
-                "position": p3.BufferAttribute(
-                    array=np.array(
-                        [self._x, self._y, np.full_like(self._x, self._zorder)],
-                        dtype="float32",
-                    ).T
-                ),
-            }
-        )
-        self._material = p3.PointsMaterial(color=self._color, size=s)
+
+        if not isinstance(c, str) or not np.isscalar(s):
+            if isinstance(c, str):
+                rgba = mplc.LinearSegmentedColormap.from_list("tmp", [c, c])(
+                    np.ones_like(self._x)
+                )
+            else:
+                rgba = mpl.colormaps[cmap](c)
+
+            colors = rgba[:, :3].astype(np.float32)  # Take only RGB, drop alpha
+
+            if np.isscalar(s):
+                sizes = np.full_like(self._x, s, dtype=np.float32)
+            else:
+                sizes = np.asarray(s, dtype=np.float32)
+
+            # Custom vertex shader for variable size and color
+            vertex_shader = """
+attribute float size;
+attribute vec3 customColor;
+varying vec3 vColor;
+
+void main() {
+    vColor = customColor;
+    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+    gl_PointSize = size;
+    gl_Position = projectionMatrix * mvPosition;
+}
+"""
+
+            self._geometry = p3.BufferGeometry(
+                attributes={
+                    "position": p3.BufferAttribute(
+                        array=np.array(
+                            [self._x, self._y, np.full_like(self._x, self._zorder)],
+                            dtype="float32",
+                        ).T
+                    ),
+                    "customColor": p3.BufferAttribute(array=colors),
+                    "size": p3.BufferAttribute(array=sizes),
+                    # "size": p3.BufferAttribute(array=sizes.reshape(-1, 1)),
+                }
+            )
+            # Create ShaderMaterial with custom shaders
+            self._material = p3.ShaderMaterial(
+                vertexShader=vertex_shader,
+                fragmentShader=SHADER_LIBRARY[marker],
+                transparent=True,
+            )
+        else:
+            self._geometry = p3.BufferGeometry(
+                attributes={
+                    "position": p3.BufferAttribute(
+                        array=np.array(
+                            [self._x, self._y, np.full_like(self._x, self._zorder)],
+                            dtype="float32",
+                        ).T
+                    ),
+                }
+            )
+
+            self._material = p3.PointsMaterial(color=mplc.to_hex(c), size=s)
+
         self._points = p3.Points(geometry=self._geometry, material=self._material)
 
     def get_bbox(self):

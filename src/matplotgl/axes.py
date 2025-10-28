@@ -169,7 +169,7 @@ class Axes(ipw.GridBox):
         )
 
     def _update_cursor_position(self, change):
-        print("Cursor position change:", change)
+        # print("Cursor position change:", change)
         # Add text at the top right corner showing cursor position
         x, y, _ = change["new"]
         self._margins["cursor"].value = (
@@ -615,10 +615,10 @@ class Axes(ipw.GridBox):
         self.autoscale()
         return line
 
-    def scatter(self, *args, color=None, **kwargs):
-        if color is None:
-            color = f"C{len(self.collections)}"
-        coll = Points(*args, color=color, **kwargs)
+    def scatter(self, *args, c=None, **kwargs):
+        if c is None:
+            c = f"C{len(self.collections)}"
+        coll = Points(*args, c=c, **kwargs)
         self.collections.append(coll)
         self.add_artist(coll)
         print("calling autoscale from scatter")
