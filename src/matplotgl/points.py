@@ -30,7 +30,35 @@ void main() {
 
     gl_FragColor = vec4(vColor, alpha);
 }
-"""
+""",
+    "s": """
+varying vec3 vColor;
+
+void main() {
+    vColor = customColor;
+    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+    gl_PointSize = size;
+    gl_Position = projectionMatrix * mvPosition;
+}
+""",
+    "^": """
+varying vec3 vColor;
+
+void main() {
+    vec2 center = gl_PointCoord - vec2(0.5, 0.5);
+    float dist = length(center);
+
+    // Discard fragments outside the circle
+    if (dist > 0.5) {
+        discard;
+    }
+
+    // Optional: add anti-aliasing at the edge
+    float alpha = 1.0 - smoothstep(0.45, 0.5, dist);
+
+    gl_FragColor = vec4(vColor, alpha);
+}
+""",
 }
 
 
