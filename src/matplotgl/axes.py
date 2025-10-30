@@ -140,8 +140,12 @@ class Axes(ipw.GridBox):
                 name: ipw.HTML(
                     layout={"grid_area": name, "padding": "0", "margin": "0"}
                 )
-                for name in ("xlabel", "ylabel", "title", "cursor")
+                for name in ("xlabel", "ylabel", "title")
             }
+        )
+        self._margins["cursor"] = ipw.Label(
+            "(0.00, 0.00)",
+            layout={"grid_area": "cursor", "padding": "0", "margin": "0"},
         )
 
         if figure is not None:
@@ -172,11 +176,13 @@ class Axes(ipw.GridBox):
         # print("Cursor position change:", change)
         # Add text at the top right corner showing cursor position
         x, y, _ = change["new"]
-        self._margins["cursor"].value = (
-            '<div style="position:relative; height: 1.1em; width: 80px;">'
-            '<div style="position:absolute; top:50%; transform: translateY(-50%);">'
-            f"({x:.2f}, {y:.2f})</div></div>"
-        )
+        self._margins["cursor"].value = f"({x:.2f}, {y:.2f})"
+
+        # self._margins["cursor"].value = (
+        #     '<div style="position:relative; height: 1.1em; width: 80px;">'
+        #     '<div style="position:absolute; top:50%; transform: translateY(-50%);">'
+        #     f"({x:.2f}, {y:.2f})</div></div>"
+        # )
 
     def on_mouse_down(self, change):
         x, y, _ = change["new"]
