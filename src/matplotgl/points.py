@@ -35,35 +35,25 @@ void main() {
 varying vec3 vColor;
 
 void main() {
-    vColor = customColor;
-    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = size;
-    gl_Position = projectionMatrix * mvPosition;
-}
+    gl_FragColor = vec4(vColor, 1.0);
+    }
 """,
     "^": """
 varying vec3 vColor;
 
 void main() {
     vec2 center = gl_PointCoord - vec2(0.5, 0.5);
-    float dist = length(center);
-
-    // Discard fragments outside the circle
-    if (dist > 0.5) {
+    if (center.y < abs(center.x) * 1.73205080757) {
         discard;
     }
-
-    // Optional: add anti-aliasing at the edge
-    float alpha = 1.0 - smoothstep(0.45, 0.5, dist);
-
-    gl_FragColor = vec4(vColor, alpha);
+    gl_FragColor = vec4(vColor, 1.0);
 }
 """,
 }
 
 
 class Points:
-    def __init__(self, x, y, c="C0", s=3, marker="o", zorder=0, cmap="viridis") -> None:
+    def __init__(self, x, y, c="C0", s=3, marker="s", zorder=0, cmap="viridis") -> None:
         self._x = np.asarray(x)
         self._y = np.asarray(y)
         self._rendered_x = self._x.copy()
@@ -72,7 +62,7 @@ class Points:
         self._yscale = "linear"
         self._zorder = zorder
 
-        if not isinstance(c, str) or not np.isscalar(s):
+        if not isinstance(c, str) or not np.isscalar(s) or marker != "s":
             if isinstance(c, str):
                 rgba = mplc.LinearSegmentedColormap.from_list("tmp", [c, c])(
                     np.ones_like(self._x)
@@ -111,7 +101,6 @@ void main() {
                     ),
                     "customColor": p3.BufferAttribute(array=colors),
                     "size": p3.BufferAttribute(array=sizes),
-                    # "size": p3.BufferAttribute(array=sizes.reshape(-1, 1)),
                 }
             )
             # Create ShaderMaterial with custom shaders
