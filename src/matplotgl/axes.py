@@ -10,6 +10,7 @@ import numpy as np
 from .line import Line
 from .points import Points
 from .image import Image
+from .mesh import Mesh
 from .utils import latex_to_html
 from .widgets import ClickableHTML
 
@@ -27,6 +28,7 @@ class Axes(ipw.GridBox):
         self._artists = []
         self.lines = []
         self.collections = []
+        self.images = []
 
         # Make background to enable box zoom
         # self._background_geometry = p3.PlaneGeometry(
@@ -632,8 +634,15 @@ class Axes(ipw.GridBox):
         return coll
 
     def imshow(self, *args, **kwargs):
-        image = Image(self, *args, **kwargs)
+        image = Image(*args, **kwargs)
         self.images.append(image)
         self.add_artist(image)
         self.autoscale()
         return image
+
+    def pcolormesh(self, *args, **kwargs):
+        mesh = Mesh(*args, **kwargs)
+        self.collections.append(mesh)
+        self.add_artist(mesh)
+        self.autoscale()
+        return mesh

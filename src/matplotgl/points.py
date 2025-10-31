@@ -56,8 +56,8 @@ class Points:
     def __init__(self, x, y, c="C0", s=3, marker="s", zorder=0, cmap="viridis") -> None:
         self._x = np.asarray(x)
         self._y = np.asarray(y)
-        self._rendered_x = self._x.copy()
-        self._rendered_y = self._y.copy()
+        # self._rendered_x = self._x.copy()
+        # self._rendered_y = self._y.copy()
         self._xscale = "linear"
         self._yscale = "linear"
         self._zorder = zorder
@@ -129,12 +129,6 @@ void main() {
         pad = 0.03
         left, right = fix_empty_range(find_limits(self._x, scale=self._xscale, pad=pad))
         bottom, top = fix_empty_range(find_limits(self._y, scale=self._yscale, pad=pad))
-        # xmin = self._x.min()
-        # xmax = self._x.max()
-        # padx = pad * (xmax - xmin)
-        # ymin = self._y.min()
-        # ymax = self._y.max()
-        # pady = pad * (ymax - ymin)
         return {"left": left, "right": right, "bottom": bottom, "top": top}
 
     def _update(self):
@@ -142,9 +136,7 @@ void main() {
             xx = self._x if self._xscale == "linear" else np.log10(self._x)
             yy = self._y if self._yscale == "linear" else np.log10(self._y)
         self._geometry.attributes["position"].array = np.array(
-            # [xx, yy, np.full_like(xx, self._zorder - 50)],
-            [xx, yy, np.full_like(xx, self._zorder)],
-            dtype="float32",
+            [xx, yy, np.full_like(xx, self._zorder)], dtype="float32"
         ).T
 
     def get(self):

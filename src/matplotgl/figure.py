@@ -24,7 +24,8 @@ class Figure(HBar):
 
     def home(self, *args):
         for ax in self.axes:
-            ax.reset()
+            ax.autoscale()
+            # ax.reset()
 
     def toggle_zoom(self, change):
         for ax in self.axes:

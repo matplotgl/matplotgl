@@ -1,58 +1,71 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2023 Matplotgl contributors (https://github.com/matplotgl)
 
+import warnings
 import pythreejs as p3
 import matplotlib as mpl
 import numpy as np
+
+from .utils import fix_empty_range, find_limits
 
 
 class Mesh:
     def __init__(self, *args, cmap="viridis"):
         if len(args) not in (1, 3):
-            raise ValueError("Invalid number of arguments: expected 1 or 3.")
+            raise ValueError(
+                f"Invalid number of arguments: expected 1 or 3. Got {len(args)}"
+            )
         if len(args) == 3:
             x, y, c = args
+            M, N = c.shape
         elif len(args) == 1:
             c = args[0]
-            N, M = c.shape
-            x = np.arange(M + 1)
-            y = np.arange(N + 1)
+            M, N = c.shape
+            x = np.arange(N + 1)
+            y = np.arange(M + 1)
+
+        self._xscale = "linear"
+        self._yscale = "linear"
+
+        self._x = np.asarray(x)
+        self._y = np.asarray(y)
+        self._c = np.asarray(c)
 
         self._cmap = mpl.colormaps[cmap]
-        colors_rgba = self._cmap(c.flatten())
+
+        self._faces = self._make_faces()
+
+        # Create BufferGeometry
+        self._geometry = p3.BufferGeometry(
+            attributes={
+                "position": p3.BufferAttribute(array=self._make_vertices()),
+                "color": p3.BufferAttribute(array=self._make_colors()),
+            },
+            index=p3.BufferAttribute(array=self._faces),
+        )
+
+        # Create material with vertex colors
+        self._material = p3.MeshBasicMaterial(
+            vertexColors="VertexColors", side="DoubleSide"
+        )
+
+        # Create mesh
+        self._mesh = p3.Mesh(geometry=self._geometry, material=self._material)
+
+    # @property
+    # def _shape(self) -> tuple[int, int]:
+    #     return self._c.shape
+
+    def _make_colors(self) -> np.ndarray:
+        colors_rgba = self._cmap(self._c.flatten())
         colors = colors_rgba[:, :3].astype("float32")
+        # Assign colors to vertices (each vertex in a cell gets the same color)
+        return np.repeat(colors, 4, axis=0)  # 4 vertices per cell
 
-        # Create meshgrid for all cell corners
-        i_indices = np.arange(N)
-        j_indices = np.arange(M)
-        j_grid, i_grid = np.meshgrid(j_indices, i_indices, indexing="ij")
-
-        # Flatten to get all cells
-        i_flat = i_grid.ravel()
-        j_flat = j_grid.ravel()
-        n_cells = len(i_flat)
-
-        # Create all four corners for all cells at once
-        # Each cell has 4 vertices: bottom-left, bottom-right, top-right, top-left
-        x_left = x[i_flat]
-        x_right = x[i_flat + 1]
-        y_bottom = y[j_flat]
-        y_top = y[j_flat + 1]
-
-        # Build vertices array (n_cells * 4 vertices, each with x, y, z coords)
-        self._vertices = np.zeros((n_cells * 4, 3), dtype=np.float32)
-        self._vertices[0::4, 0] = x_left
-        self._vertices[0::4, 1] = y_bottom
-        self._vertices[1::4, 0] = x_right
-        self._vertices[1::4, 1] = y_bottom
-        self._vertices[2::4, 0] = x_right
-        self._vertices[2::4, 1] = y_top
-        self._vertices[3::4, 0] = x_left
-        self._vertices[3::4, 1] = y_top
-        # z coordinates are already 0
-
+    def _make_faces(self) -> np.ndarray:
         # Create faces (indices into vertices array)
         # For each cell, create two triangles
+        n_cells = self._c.size
         base_indices = np.arange(n_cells) * 4
         faces = np.zeros((n_cells * 2, 3), dtype=np.uint32)
         # First triangle: v0, v1, v2
@@ -63,32 +76,103 @@ class Mesh:
         faces[1::2, 0] = base_indices
         faces[1::2, 1] = base_indices + 2
         faces[1::2, 2] = base_indices + 3
+        return faces.flatten()
 
-        # Assign colors to vertices (each vertex in a cell gets the same color)
-        vertex_colors = np.repeat(colors, 4, axis=0)  # 4 vertices per cell
+    def _make_vertices(self) -> np.ndarray:
+        M, N = self._c.shape
+        with warnings.catch_warnings(category=RuntimeWarning, action="ignore"):
+            x = self._x if self._xscale == "linear" else np.log10(self._x)
+            y = self._y if self._yscale == "linear" else np.log10(self._y)
 
-        # Create BufferGeometry
-        geometry = p3.BufferGeometry(
-            attributes={
-                "position": p3.BufferAttribute(array=self._vertices),
-                "color": p3.BufferAttribute(array=vertex_colors),
-            },
-            index=p3.BufferAttribute(array=faces.ravel()),
-        )
+        # Create meshgrid for all cell corners
+        i_indices = np.arange(N)
+        j_indices = np.arange(M)
+        j_grid, i_grid = np.meshgrid(j_indices, i_indices, indexing="ij")
 
-        # Create material with vertex colors
-        material = p3.MeshBasicMaterial(vertexColors="VertexColors", side="DoubleSide")
+        # Flatten to get all cells
+        i_flat = i_grid.flatten()
+        j_flat = j_grid.flatten()
+        n_cells = len(i_flat)
 
-        # Create mesh
-        self._mesh = p3.Mesh(geometry=geometry, material=material)
+        # Create all four corners for all cells at once
+        # Each cell has 4 vertices: bottom-left, bottom-right, top-right, top-left
+        x_left = x[i_flat]
+        x_right = x[i_flat + 1]
+        y_bottom = y[j_flat]
+        y_top = y[j_flat + 1]
 
-    def get_bbox(self):
-        return {
-            "left": self._vertices[:, 0].min(),
-            "right": self._vertices[:, 0].max(),
-            "bottom": self._vertices[:, 1].min(),
-            "top": self._vertices[:, 1].max(),
-        }
+        # Build vertices array (n_cells * 4 vertices, each with x, y, z coords)
+        vertices = np.zeros((n_cells * 4, 3), dtype=np.float32)
+        vertices[0::4, 0] = x_left
+        vertices[0::4, 1] = y_bottom
+        vertices[1::4, 0] = x_right
+        vertices[1::4, 1] = y_bottom
+        vertices[2::4, 0] = x_right
+        vertices[2::4, 1] = y_top
+        vertices[3::4, 0] = x_left
+        vertices[3::4, 1] = y_top
+        # z coordinates are already 0
 
-    def get(self):
+        # # Create faces (indices into vertices array)
+        # # For each cell, create two triangles
+        # base_indices = np.arange(n_cells) * 4
+        # faces = np.zeros((n_cells * 2, 3), dtype=np.uint32)
+        # # First triangle: v0, v1, v2
+        # faces[0::2, 0] = base_indices
+        # faces[0::2, 1] = base_indices + 1
+        # faces[0::2, 2] = base_indices + 2
+        # # Second triangle: v0, v2, v3
+        # faces[1::2, 0] = base_indices
+        # faces[1::2, 1] = base_indices + 2
+        # faces[1::2, 2] = base_indices + 3
+        return vertices
+
+        # # Assign colors to vertices (each vertex in a cell gets the same color)
+        # vertex_colors = np.repeat(colors, 4, axis=0)  # 4 vertices per cell
+
+        # # Create BufferGeometry
+        # return p3.BufferGeometry(
+        #     attributes={
+        #         "position": p3.BufferAttribute(array=vertices),
+        #         "color": p3.BufferAttribute(array=vertex_colors),
+        #     },
+        #     index=p3.BufferAttribute(array=faces.flatten()),
+        # )
+
+    def _update_positions(self):
+        self._geometry.attributes["position"].array = self._make_vertices()
+
+    def get_bbox(self) -> dict[str, float]:
+        pad = False
+        left, right = fix_empty_range(find_limits(self._x, scale=self._xscale, pad=pad))
+        bottom, top = fix_empty_range(find_limits(self._y, scale=self._yscale, pad=pad))
+        return {"left": left, "right": right, "bottom": bottom, "top": top}
+
+    def get(self) -> p3.Object3D:
         return self._mesh
+
+    def get_xdata(self) -> np.ndarray:
+        return self._x
+
+    def set_xdata(self, x):
+        self._x = np.asarray(x)
+        self._update_positions()
+
+    def get_ydata(self) -> np.ndarray:
+        return self._y
+
+    def set_ydata(self, y):
+        self._y = np.asarray(y)
+        self._update_positions()
+
+    def set_array(self, c):
+        self._c = np.asarray(c)
+        self._geometry.attributes["color"].array = self._make_colors()
+
+    def _set_xscale(self, scale: str) -> None:
+        self._xscale = scale
+        self._update_positions()
+
+    def _set_yscale(self, scale: str) -> None:
+        self._yscale = scale
+        self._update_positions()
