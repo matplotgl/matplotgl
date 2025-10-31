@@ -67,7 +67,12 @@ class Points:
                     np.ones_like(self._x)
                 )
             else:
-                rgba = mpl.colormaps[cmap](c)
+                self._c = np.asarray(c)
+                self.norm = mpl.colors.Normalize(
+                    vmin=np.min(self._c), vmax=np.max(self._c)
+                )
+                self.cmap = mpl.colormaps[cmap].copy()
+                rgba = self.cmap(self.norm(self._c))
 
             colors = rgba[:, :3].astype(np.float32)  # Take only RGB, drop alpha
 

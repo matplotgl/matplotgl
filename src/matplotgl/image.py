@@ -6,6 +6,9 @@ import matplotlib as mpl
 import numpy as np
 
 
+from .norm import Normalizer
+
+
 class Image:
     def __init__(
         self,
@@ -15,19 +18,16 @@ class Image:
         zorder: float = 0,
     ):
         self.axes = None
+        self._colorbar = None
         self._array = np.asarray(array)
         self._extent = (
             extent if extent is not None else [0, array.shape[1], 0, array.shape[0]]
         )
         self._zorder = zorder
-        self._norm = mpl.colors.Normalize(
-            vmin=np.min(self._array), vmax=np.max(self._array)
-        )
-        self.cmap = mpl.colormaps[cmap]
+        self._norm = Normalizer(vmin=np.min(self._array), vmax=np.max(self._array))
+        self._cmap = mpl.colormaps[cmap].copy()
         self._texture = p3.DataTexture(
-            data=self.cmap(self._array)[..., :3].astype("float32"),
-            format="RGBFormat",
-            type="FloatType",
+            data=self._make_colors(), format="RGBFormat", type="FloatType"
         )
 
         self._geometry = p3.PlaneGeometry(
@@ -47,6 +47,9 @@ class Image:
             ],
         )
 
+    def _make_colors(self) -> np.ndarray:
+        return self._cmap(self.norm(self._array))[..., :3].astype("float32")
+
     def get_bbox(self) -> dict[str, float]:
         return {
             "left": self._extent[0],
@@ -54,6 +57,9 @@ class Image:
             "bottom": self._extent[2],
             "top": self._extent[3],
         }
+
+    def _update_colors(self) -> None:
+        self._texture.data = self._make_colors()
 
     def get(self) -> p3.Object3D:
         return self._image
@@ -71,7 +77,7 @@ class Image:
 
     def set_array(self, array: np.ndarray) -> None:
         self._array = np.asarray(array)
-        self._texture.data = self.cmap(self._array)[..., :3].astype("float32")
+        self._update_colors()
 
     def get_extent(self) -> list[float]:
         return self._extent
@@ -90,3 +96,33 @@ class Image:
             0.5 * (self._extent[2] + self._extent[3]),
             self._zorder,
         ]
+
+    def set_cmap(self, cmap: str) -> None:
+        self._cmap = mpl.colormaps[cmap].copy()
+        self._texture.data = self._make_colors()
+        if self._colorbar is not None:
+            self._colorbar.update()
+
+    @property
+    def cmap(self) -> mpl.colormaps:
+        return self._cmap
+
+    @cmap.setter
+    def cmap(self, cmap: str) -> None:
+        self.set_cmap(cmap)
+
+    @property
+    def norm(self) -> Normalizer:
+        return self._norm
+
+    @norm.setter
+    def norm(self, norm: Normalizer | str) -> None:
+        if isinstance(norm, str):
+            self._norm = Normalizer(
+                vmin=np.min(self._array), vmax=np.max(self._array), norm=norm
+            )
+        else:
+            self._norm = norm
+        self._texture.data = self._make_colors()
+        if self._colorbar is not None:
+            self._colorbar.update()

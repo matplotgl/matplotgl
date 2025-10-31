@@ -4,7 +4,7 @@
 from .toolbar import Toolbar
 from .widgets import HBar
 
-from .colorbar import make_colorbar
+from .colorbar import Colorbar
 
 
 class Figure(HBar):
@@ -104,5 +104,13 @@ class Figure(HBar):
     def colorbar(self, mappable, ax=None):
         if ax is None:
             ax = mappable.axes
-        cb_svg = make_colorbar(mappable, height_inches=ax.height / self._dpi)
-        ax._margins["colorbar"].value = cb_svg
+        cb = Colorbar(
+            widget=ax._margins["colorbar"],
+            mappable=mappable,
+            height_inches=ax.height / self._dpi,
+        )
+        cb.update()
+        mappable._colorbar = cb
+        mappable._norm._colorbar = cb
+        return cb
+        # ax._margins["colorbar"].value = cb_svg

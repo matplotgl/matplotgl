@@ -32,7 +32,8 @@ class Mesh:
         self._y = np.asarray(y)
         self._c = np.asarray(c)
 
-        self._cmap = mpl.colormaps[cmap]
+        self.norm = mpl.colors.Normalize(vmin=np.min(self._c), vmax=np.max(self._c))
+        self.cmap = mpl.colormaps[cmap].copy()
 
         self._faces = self._make_faces()
 
@@ -54,7 +55,7 @@ class Mesh:
         self._mesh = p3.Mesh(geometry=self._geometry, material=self._material)
 
     def _make_colors(self) -> np.ndarray:
-        colors_rgba = self._cmap(self._c.flatten())
+        colors_rgba = self.cmap(self.norm(self._c.flatten()))
         colors = colors_rgba[:, :3].astype("float32")
         # Assign colors to vertices (each vertex in a cell gets the same color)
         return np.repeat(colors, 4, axis=0)  # 4 vertices per cell
