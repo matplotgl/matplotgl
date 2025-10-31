@@ -11,6 +11,7 @@ from .utils import fix_empty_range, find_limits
 
 class Line:
     def __init__(self, x, y, fmt="-", color="C0", ls="solid", lw=1, ms=5, zorder=0):
+        self.axes = None
         self._xscale = "linear"
         self._yscale = "linear"
         self._x = np.asarray(x)
@@ -56,19 +57,6 @@ class Line:
             )
 
     def get_bbox(self):
-        # pad = 0.03
-        # xmin = self._x.min()
-        # xmax = self._x.max()
-        # padx = pad * (xmax - xmin)
-        # ymin = self._y.min()
-        # ymax = self._y.max()
-        # pady = pad * (ymax - ymin)
-        # return {
-        #     "left": xmin - padx,
-        #     "right": xmax + padx,
-        #     "bottom": ymin - pady,
-        #     "top": ymax + pady,
-        # }
         pad = 0.03
         left, right = fix_empty_range(find_limits(self._x, scale=self._xscale, pad=pad))
         bottom, top = fix_empty_range(find_limits(self._y, scale=self._yscale, pad=pad))

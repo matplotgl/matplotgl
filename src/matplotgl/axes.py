@@ -23,7 +23,6 @@ class Axes(ipw.GridBox):
         self._ymin = 0.0
         self._ymax = 1.0
         self._fig = None
-        # self._dpi = 96
         self._ax = ax
         self._artists = []
         self.lines = []
@@ -31,10 +30,7 @@ class Axes(ipw.GridBox):
         self.images = []
 
         # Make background to enable box zoom
-        # self._background_geometry = p3.PlaneGeometry(
-        #     width=2, height=2, widthSegments=1, heightSegments=1
-        # )
-        self._background_geometry = p3.PlaneBufferGeometry(
+        self._background_geometry = p3.PlaneGeometry(
             width=2, height=2, widthSegments=1, heightSegments=1
         )
         self._background_material = p3.MeshBasicMaterial(color=self.background_color)
@@ -98,9 +94,6 @@ class Axes(ipw.GridBox):
         self._zoom_mouse_down = False
         self._zoom_mouse_moved = False
         self._zoom_limits = {}
-        # self._zoom_xmax = None
-        # self._zoom_ymin = None
-        # self._zoom_ymax = None
 
         # Tool state: 'zoom' or 'pan'
         self._active_tool = None
@@ -126,14 +119,10 @@ class Axes(ipw.GridBox):
                 },
             )
             for name in (
-                # "xlabel",
-                # "ylabel",
-                # "title",
                 "leftspine",
                 "rightspine",
                 "bottomspine",
                 "topspine",
-                # "cursor",
                 "colorbar",
             )
         }
@@ -162,11 +151,11 @@ class Axes(ipw.GridBox):
                 grid_template_columns="auto" * 5,
                 grid_template_rows="auto" * 5,
                 grid_template_areas="""
-            ". . title cursor cursor"
+            ". . title . ."
             ". . topspine topspine colorbar"
             "ylabel leftspine renderer rightspine colorbar"
             ". leftspine bottomspine bottomspine colorbar"
-            ". . xlabel . ."
+            ". . xlabel cursor cursor"
             """,
                 padding="0",
                 grid_gap="0px 0px",
@@ -175,16 +164,8 @@ class Axes(ipw.GridBox):
         )
 
     def _update_cursor_position(self, change):
-        # print("Cursor position change:", change)
-        # Add text at the top right corner showing cursor position
         x, y, _ = change["new"]
         self._margins["cursor"].value = f"({x:.2f}, {y:.2f})"
-
-        # self._margins["cursor"].value = (
-        #     '<div style="position:relative; height: 1.1em; width: 80px;">'
-        #     '<div style="position:absolute; top:50%; transform: translateY(-50%);">'
-        #     f"({x:.2f}, {y:.2f})</div></div>"
-        # )
 
     def on_mouse_down(self, change):
         x, y, _ = change["new"]
@@ -618,6 +599,7 @@ class Axes(ipw.GridBox):
         if color is None:
             color = f"C{len(self.lines)}"
         line = Line(*args, color=color, **kwargs)
+        line.axes = self
         self.lines.append(line)
         self.add_artist(line)
         self.autoscale()
@@ -627,6 +609,7 @@ class Axes(ipw.GridBox):
         if c is None:
             c = f"C{len(self.collections)}"
         coll = Points(*args, c=c, **kwargs)
+        coll.axes = self
         self.collections.append(coll)
         self.add_artist(coll)
         print("calling autoscale from scatter")
@@ -635,6 +618,7 @@ class Axes(ipw.GridBox):
 
     def imshow(self, *args, **kwargs):
         image = Image(*args, **kwargs)
+        image.axes = self
         self.images.append(image)
         self.add_artist(image)
         self.autoscale()
@@ -642,6 +626,7 @@ class Axes(ipw.GridBox):
 
     def pcolormesh(self, *args, **kwargs):
         mesh = Mesh(*args, **kwargs)
+        mesh.axes = self
         self.collections.append(mesh)
         self.add_artist(mesh)
         self.autoscale()

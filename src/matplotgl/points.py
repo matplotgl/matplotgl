@@ -54,10 +54,9 @@ void main() {
 
 class Points:
     def __init__(self, x, y, c="C0", s=3, marker="s", zorder=0, cmap="viridis") -> None:
+        self.axes = None
         self._x = np.asarray(x)
         self._y = np.asarray(y)
-        # self._rendered_x = self._x.copy()
-        # self._rendered_y = self._y.copy()
         self._xscale = "linear"
         self._yscale = "linear"
         self._zorder = zorder

@@ -4,6 +4,8 @@
 from .toolbar import Toolbar
 from .widgets import HBar
 
+from .colorbar import make_colorbar
+
 
 class Figure(HBar):
     def __init__(self, *, figsize=(5.0, 3.5), dpi=96, nrows=1, ncols=1) -> None:
@@ -98,3 +100,9 @@ class Figure(HBar):
         for ax in self.axes:
             ax.width = self.width // self._ncols
             ax.height = self.height // self._nrows
+
+    def colorbar(self, mappable, ax=None):
+        if ax is None:
+            ax = mappable.axes
+        cb_svg = make_colorbar(mappable, height_inches=ax.height / self._dpi)
+        ax._margins["colorbar"].value = cb_svg

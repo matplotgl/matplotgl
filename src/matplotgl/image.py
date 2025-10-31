@@ -14,14 +14,18 @@ class Image:
         cmap: str = "viridis",
         zorder: float = 0,
     ):
+        self.axes = None
         self._array = np.asarray(array)
         self._extent = (
             extent if extent is not None else [0, array.shape[1], 0, array.shape[0]]
         )
         self._zorder = zorder
-        self._cmap = mpl.colormaps[cmap]
+        self._norm = mpl.colors.Normalize(
+            vmin=np.min(self._array), vmax=np.max(self._array)
+        )
+        self.cmap = mpl.colormaps[cmap]
         self._texture = p3.DataTexture(
-            data=self._cmap(self._array)[..., :3].astype("float32"),
+            data=self.cmap(self._array)[..., :3].astype("float32"),
             format="RGBFormat",
             type="FloatType",
         )
@@ -67,7 +71,7 @@ class Image:
 
     def set_array(self, array: np.ndarray) -> None:
         self._array = np.asarray(array)
-        self._texture.data = self._cmap(self._array)[..., :3].astype("float32")
+        self._texture.data = self.cmap(self._array)[..., :3].astype("float32")
 
     def get_extent(self) -> list[float]:
         return self._extent

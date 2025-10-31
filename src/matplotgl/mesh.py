@@ -24,6 +24,7 @@ class Mesh:
             x = np.arange(N + 1)
             y = np.arange(M + 1)
 
+        self.axes = None
         self._xscale = "linear"
         self._yscale = "linear"
 
@@ -51,10 +52,6 @@ class Mesh:
 
         # Create mesh
         self._mesh = p3.Mesh(geometry=self._geometry, material=self._material)
-
-    # @property
-    # def _shape(self) -> tuple[int, int]:
-    #     return self._c.shape
 
     def _make_colors(self) -> np.ndarray:
         colors_rgba = self._cmap(self._c.flatten())
@@ -111,35 +108,9 @@ class Mesh:
         vertices[2::4, 1] = y_top
         vertices[3::4, 0] = x_left
         vertices[3::4, 1] = y_top
-        # z coordinates are already 0
-
-        # # Create faces (indices into vertices array)
-        # # For each cell, create two triangles
-        # base_indices = np.arange(n_cells) * 4
-        # faces = np.zeros((n_cells * 2, 3), dtype=np.uint32)
-        # # First triangle: v0, v1, v2
-        # faces[0::2, 0] = base_indices
-        # faces[0::2, 1] = base_indices + 1
-        # faces[0::2, 2] = base_indices + 2
-        # # Second triangle: v0, v2, v3
-        # faces[1::2, 0] = base_indices
-        # faces[1::2, 1] = base_indices + 2
-        # faces[1::2, 2] = base_indices + 3
         return vertices
 
-        # # Assign colors to vertices (each vertex in a cell gets the same color)
-        # vertex_colors = np.repeat(colors, 4, axis=0)  # 4 vertices per cell
-
-        # # Create BufferGeometry
-        # return p3.BufferGeometry(
-        #     attributes={
-        #         "position": p3.BufferAttribute(array=vertices),
-        #         "color": p3.BufferAttribute(array=vertex_colors),
-        #     },
-        #     index=p3.BufferAttribute(array=faces.flatten()),
-        # )
-
-    def _update_positions(self):
+    def _update_positions(self) -> None:
         self._geometry.attributes["position"].array = self._make_vertices()
 
     def get_bbox(self) -> dict[str, float]:
@@ -154,18 +125,18 @@ class Mesh:
     def get_xdata(self) -> np.ndarray:
         return self._x
 
-    def set_xdata(self, x):
+    def set_xdata(self, x: np.ndarray):
         self._x = np.asarray(x)
         self._update_positions()
 
     def get_ydata(self) -> np.ndarray:
         return self._y
 
-    def set_ydata(self, y):
+    def set_ydata(self, y: np.ndarray):
         self._y = np.asarray(y)
         self._update_positions()
 
-    def set_array(self, c):
+    def set_array(self, c: np.ndarray):
         self._c = np.asarray(c)
         self._geometry.attributes["color"].array = self._make_colors()
 
