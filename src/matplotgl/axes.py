@@ -612,7 +612,6 @@ class Axes(ipw.GridBox):
         coll.axes = self
         self.collections.append(coll)
         self.add_artist(coll)
-        print("calling autoscale from scatter")
         self.autoscale()
         return coll
 
